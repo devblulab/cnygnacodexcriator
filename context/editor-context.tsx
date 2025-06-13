@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -98,164 +97,137 @@ p {
 ]
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
+  const [files, setFiles] = useState<FileType[]>([])
+  const [currentFile, setCurrentFile] = useState<FileType | null>(null)
   const [projects, setProjects] = useState<ProjectType[]>([])
   const [currentProject, setCurrentProject] = useState<ProjectType | null>(null)
-  const [currentFile, setCurrentFile] = useState<FileType | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  // Carregar projetos exemplo na inicialização
+  // Load mock projects for testing
   useEffect(() => {
-    const savedProjects = localStorage.getItem('quantumcode-projects')
-    if (savedProjects) {
-      try {
-        const parsedProjects = JSON.parse(savedProjects)
-        setProjects(parsedProjects)
-        if (parsedProjects.length > 0) {
-          setCurrentProject(parsedProjects[0])
-          if (parsedProjects[0].files.length > 0) {
-            setCurrentFile(parsedProjects[0].files[0])
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao carregar projetos salvos:', error)
-        // Se houver erro, usar projetos mock
-        setProjects(mockProjects)
-        setCurrentProject(mockProjects[0])
-        setCurrentFile(mockProjects[0].files[0])
-      }
-    } else {
-      // Primeira vez - usar projetos mock
-      setProjects(mockProjects)
-      setCurrentProject(mockProjects[0])
-      setCurrentFile(mockProjects[0].files[0])
-    }
+    loadMockProjects()
   }, [])
 
-  // Salvar projetos no localStorage sempre que mudarem
-  useEffect(() => {
-    if (projects.length > 0) {
-      localStorage.setItem('quantumcode-projects', JSON.stringify(projects))
-    }
-  }, [projects])
+  const loadMockProjects = () => {
+    const mockProjects: ProjectType[] = [
+      {
+        id: "1",
+        name: "Projeto Teste",
+        description: "Projeto de exemplo para teste",
+        ownerId: "mock-user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: false,
+        collaborators: [],
+        tags: ["react", "typescript"]
+      }
+    ]
 
-  const createProject = async (project: Omit<ProjectType, "id" | "createdAt" | "updatedAt">) => {
+    setProjects(mockProjects)
+    setCurrentProject(mockProjects[0])
+    loadMockFiles()
+  }
+
+  const loadMockFiles = () => {
+    const mockFiles: FileType[] = [
+      {
+        id: "1",
+        name: "App.tsx",
+        content: `import React from 'react'
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Hello, World!</h1>
+    </div>
+  )
+}
+
+export default App`,
+        type: "file",
+        projectId: "1",
+        path: "/src/App.tsx",
+        language: "typescript",
+        size: 150,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+
+    setFiles(mockFiles)
+    setCurrentFile(mockFiles[0])
+  }
+
+  const loadProjectFiles = async (projectId: string) => {
+    // Mock implementation
+    loadMockFiles()
+  }
+
+  const createProject = async (projectData: Omit<ProjectType, "id" | "createdAt" | "updatedAt">) => {
     try {
-      const timestamp = Date.now()
-      const projectId = `project_${timestamp}`
-      
       const newProject = {
-        id: projectId,
-        ...project,
-        createdAt: timestamp,
-        updatedAt: timestamp,
+        id: Date.now().toString(),
+        ...projectData,
+        ownerId: "mock-user",
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
 
-      setProjects((prev) => [...prev, newProject])
-      return projectId
+      setProjects(prev => [...prev, newProject])
+      setCurrentProject(newProject)
+      return newProject
     } catch (error) {
-      console.error("Erro ao criar projeto:", error)
+      console.error("Error creating project:", error)
       throw error
     }
   }
 
-  const updateProject = async (project: ProjectType) => {
+  const createFile = async (fileData: Omit<FileType, "id" | "createdAt" | "updatedAt">) => {
     try {
-      const updatedProject = {
-        ...project,
-        updatedAt: Date.now(),
+      const newFile = {
+        id: Date.now().toString(),
+        ...fileData,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
 
-      setProjects((prev) => prev.map((p) => (p.id === project.id ? updatedProject : p)))
-
-      if (currentProject?.id === project.id) {
-        setCurrentProject(updatedProject)
-      }
+      setFiles(prev => [...prev, newFile])
+      return newFile
     } catch (error) {
-      console.error("Erro ao atualizar projeto:", error)
-      throw error
-    }
-  }
-
-  const deleteProject = async (projectId: string) => {
-    try {
-      setProjects((prev) => prev.filter((p) => p.id !== projectId))
-
-      if (currentProject?.id === projectId) {
-        setCurrentProject(null)
-        setCurrentFile(null)
-      }
-    } catch (error) {
-      console.error("Erro ao deletar projeto:", error)
-      throw error
-    }
-  }
-
-  const createFile = async (projectId: string, file: Omit<FileType, "id">) => {
-    try {
-      const project = projects.find((p) => p.id === projectId)
-      if (!project) throw new Error("Projeto não encontrado")
-
-      const fileId = `file_${Date.now()}`
-      const newFile = { id: fileId, ...file }
-
-      const updatedProject = {
-        ...project,
-        files: [...project.files, newFile],
-        updatedAt: Date.now(),
-      }
-
-      await updateProject(updatedProject)
-      return fileId
-    } catch (error) {
-      console.error("Erro ao criar arquivo:", error)
+      console.error("Error creating file:", error)
       throw error
     }
   }
 
   const saveFile = async (file: FileType) => {
-    if (!currentProject) throw new Error("Nenhum projeto selecionado")
-
     try {
-      const updatedFiles = currentProject.files.map((f) =>
-        f.id === file.id ? { ...file, lastModified: Date.now() } : f,
+      setFiles(prev => 
+        prev.map(f => f.id === file.id ? { ...f, content: file.content, updatedAt: new Date() } : f)
       )
 
-      const updatedProject = {
-        ...currentProject,
-        files: updatedFiles,
-        updatedAt: Date.now(),
-      }
-
-      await updateProject(updatedProject)
-
-      // Atualizar arquivo atual se for o que está sendo salvo
       if (currentFile?.id === file.id) {
-        setCurrentFile({ ...file, lastModified: Date.now() })
+        setCurrentFile({ ...file, updatedAt: new Date() })
       }
+
+      console.log("File saved:", file.name)
     } catch (error) {
-      console.error("Erro ao salvar arquivo:", error)
+      console.error("Error saving file:", error)
       throw error
     }
   }
 
-  const deleteFile = async (projectId: string, fileId: string) => {
+  const deleteFile = async (fileId: string) => {
     try {
-      const project = projects.find((p) => p.id === projectId)
-      if (!project) throw new Error("Projeto não encontrado")
+      setFiles(prev => prev.filter(f => f.id !== fileId))
 
-      const updatedProject = {
-        ...project,
-        files: project.files.filter((f) => f.id !== fileId),
-        updatedAt: Date.now(),
-      }
-
-      await updateProject(updatedProject)
-
-      // Se o arquivo deletado é o arquivo atual, limpar seleção
       if (currentFile?.id === fileId) {
-        setCurrentFile(null)
+        const remainingFiles = files.filter(f => f.id !== fileId)
+        setCurrentFile(remainingFiles.length > 0 ? remainingFiles[0] : null)
       }
+
+      console.log("File deleted:", fileId)
     } catch (error) {
-      console.error("Erro ao deletar arquivo:", error)
+      console.error("Error deleting file:", error)
       throw error
     }
   }
@@ -269,8 +241,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setCurrentProject,
         setCurrentFile,
         createProject,
-        updateProject,
-        deleteProject,
+        updateProject: async () => {},
+        deleteProject: async () => {},
         createFile,
         saveFile,
         deleteFile,
