@@ -1,223 +1,350 @@
+
 "use client"
 
-import { generateCode } from "@/lib/ai/gemini-service"
+import geminiService from "@/lib/ai/gemini-service"
 
-type VoiceCommandHandler = {
-  execute: (command: string) => Promise<string | void>
-  description: string
-  examples: string[]
+interface VoiceCommand {
+  command: string
+  timestamp: number
+  confidence: number
 }
 
-// Map of command patterns to their handlers
-const commandHandlers: Record<string, VoiceCommandHandler> = {
-  "create|generate|make|new": {
-    execute: async (command: string) => {
-      // Extract what to create from the command
-      const match = command.match(/create|generate|make|new\s+(.*)/i)
-      if (!match) return "Could not understand what to create"
-
-      const description = match[1]
-      return await generateCode(`Create ${description}`, { description })
-    },
-    description: "Generate code based on a description",
-    examples: ["Create a login form with React", "Generate a Next.js API route for user authentication"],
-  },
-
-  "explain|describe|what does": {
-    execute: async (command: string) => {
-      // This would typically use code from the current editor
-      // For now, we'll just return a placeholder
-      return "To explain code, I need to see the code in the editor first."
-    },
-    description: "Explain the selected code or code in the current file",
-    examples: ["Explain this code", "What does this function do?"],
-  },
-
-  "debug|fix|solve": {
-    execute: async (command: string) => {
-      // This would typically use code from the current editor
-      // For now, we'll just return a placeholder
-      return "To debug code, I need to see the code in the editor first."
-    },
-    description: "Debug the selected code or code in the current file",
-    examples: ["Debug this code", "Fix this error"],
-  },
-
-  "translate|convert": {
-    execute: async (command: string) => {
-      // Extract languages from the command
-      const match = command.match(/translate|convert\s+from\s+(\w+)\s+to\s+(\w+)/i)
-      if (!match) return "Could not understand the translation request"
-
-      const fromLanguage = match[1]
-      const toLanguage = match[2]
-
-      // This would typically use code from the current editor
-      return `Will translate from ${fromLanguage} to ${toLanguage} once code is selected.`
-    },
-    description: "Translate code from one language to another",
-    examples: ["Translate from JavaScript to Python", "Convert from Java to TypeScript"],
-  },
-
-  "run|execute|build": {
-    execute: async (command: string) => {
-      // This would trigger the build/run process
-      return "Starting build process..."
-    },
-    description: "Run or build the current project",
-    examples: ["Run the project", "Build and deploy"],
-  },
-
-  "help|commands|what can you do": {
-    execute: async () => {
-      // Return available commands
-      let helpText = "Available voice commands:\n\n"
-
-      Object.entries(commandHandlers).forEach(([patterns, handler]) => {
-        helpText += `${patterns.split("|").join(", ")}:\n`
-        helpText += `  ${handler.description}\n`
-        helpText += `  Examples: ${handler.examples.join(", ")}\n\n`
-      })
-
-      return helpText
-    },
-    description: "Show available voice commands",
-    examples: ["Help", "What commands can I use?"],
-  },
-}
-
-export class VoiceCommandService {
+class VoiceCommandService {
   private recognition: SpeechRecognition | null = null
+  private synthesis: SpeechSynthesis | null = null
   private isListening = false
-  private onResultCallback: ((result: string) => void) | null = null
-  private onCommandCallback: ((command: string, response: string) => void) | null = null
-  private onErrorCallback: ((error: string) => void) | null = null
+  private callbacks: ((result: VoiceCommand) => void)[] = []
 
   constructor() {
-    if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
-      const SpeechRecognitionAPI: any = window.SpeechRecognition || (window as any).webkitSpeechRecognition
-      this.recognition = new SpeechRecognitionAPI()
-      this.recognition.continuous = false
-      this.recognition.interimResults = false
-      this.recognition.lang = "pt-BR" // Default to Brazilian Portuguese
+    if (typeof window !== "undefined") {
+      this.initialize()
+    }
+  }
 
-      this.recognition.onresult = this.handleResult.bind(this)
-      this.recognition.onerror = this.handleError.bind(this)
-      this.recognition.onend = () => {
-        this.isListening = false
+  private initialize() {
+    // Inicializar Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (SpeechRecognition) {
+      this.recognition = new SpeechRecognition()
+      this.setupRecognition()
+    }
+
+    // Inicializar Speech Synthesis
+    if (window.speechSynthesis) {
+      this.synthesis = window.speechSynthesis
+    }
+  }
+
+  private setupRecognition() {
+    if (!this.recognition) return
+
+    this.recognition.continuous = true
+    this.recognition.interimResults = true
+    this.recognition.lang = 'pt-BR'
+
+    this.recognition.onresult = (event) => {
+      let finalTranscript = ''
+      let confidence = 0
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript
+          confidence = result[0].confidence
+        }
       }
-    }
-  }
 
-  public setLanguage(lang: string): void {
-    if (this.recognition) {
-      this.recognition.lang = lang
-    }
-  }
-
-  public start(): boolean {
-    if (!this.recognition) {
-      this.handleError({ error: "Speech recognition not supported" })
-      return false
-    }
-
-    try {
-      this.recognition.start()
-      this.isListening = true
-      return true
-    } catch (error) {
-      this.handleError({ error: "Failed to start speech recognition" })
-      return false
-    }
-  }
-
-  public stop(): void {
-    if (this.recognition && this.isListening) {
-      this.recognition.stop()
-      this.isListening = false
-    }
-  }
-
-  public isSupported(): boolean {
-    return !!this.recognition
-  }
-
-  public onResult(callback: (result: string) => void): void {
-    this.onResultCallback = callback
-  }
-
-  public onCommand(callback: (command: string, response: string) => void): void {
-    this.onCommandCallback = callback
-  }
-
-  public onError(callback: (error: string) => void): void {
-    this.onErrorCallback = callback
-  }
-
-  private async handleResult(event: any): Promise<void> {
-    const transcript = event.results[0][0].transcript.trim().toLowerCase()
-
-    if (this.onResultCallback) {
-      this.onResultCallback(transcript)
-    }
-
-    // Process the command
-    await this.processCommand(transcript)
-  }
-
-  private handleError(event: { error: string }): void {
-    if (this.onErrorCallback) {
-      this.onErrorCallback(event.error)
-    }
-  }
-
-  private async processCommand(command: string): Promise<void> {
-    try {
-      let handled = false
-
-      // Check each command pattern
-      for (const [patterns, handler] of Object.entries(commandHandlers)) {
-        const patternArray = patterns.split("|")
-
-        for (const pattern of patternArray) {
-          if (command.includes(pattern)) {
-            const response = await handler.execute(command)
-
-            if (this.onCommandCallback && response) {
-              this.onCommandCallback(command, response.toString())
-            }
-
-            handled = true
-            break
-          }
+      if (finalTranscript) {
+        const command: VoiceCommand = {
+          command: finalTranscript.trim(),
+          timestamp: Date.now(),
+          confidence
         }
 
-        if (handled) break
+        this.callbacks.forEach(callback => callback(command))
+        this.processVoiceCommand(command.command)
       }
+    }
 
-      // If no command matched
-      if (!handled && this.onCommandCallback) {
-        this.onCommandCallback(
-          command,
-          "I didn't understand that command. Try saying 'help' to see available commands.",
-        )
-      }
-    } catch (error) {
-      console.error("Error processing voice command:", error)
+    this.recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error)
+    }
 
-      if (this.onErrorCallback) {
-        this.onErrorCallback("Error processing command")
+    this.recognition.onend = () => {
+      if (this.isListening) {
+        // Reiniciar automaticamente se ainda estiver no modo de escuta
+        this.recognition?.start()
       }
     }
   }
-}
 
-// Create a singleton instance
-let voiceCommandServiceInstance: VoiceCommandService | null = null
+  // Iniciar escuta de comandos de voz
+  startListening(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.recognition) {
+        reject(new Error('Speech recognition not supported'))
+        return
+      }
 
-export function getVoiceCommandService(): VoiceCommandService {
-  if (!voiceCommandServiceInstance) {
-    voiceCommandServiceInstance = new VoiceCommandService()
+      try {
+        this.isListening = true
+        this.recognition.start()
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
   }
-  return voiceCommandServiceInstance
+
+  // Parar escuta de comandos de voz
+  stopListening() {
+    this.isListening = false
+    this.recognition?.stop()
+  }
+
+  // Processar comando de voz usando Gemini
+  private async processVoiceCommand(command: string) {
+    try {
+      const processedCommand = await this.interpretCommand(command)
+      
+      // Executar ação baseada no comando interpretado
+      switch (processedCommand.action) {
+        case 'generate_interface':
+          await this.executeGenerateInterface(processedCommand.parameters)
+          break
+        case 'explain_code':
+          await this.executeExplainCode(processedCommand.parameters)
+          break
+        case 'debug_code':
+          await this.executeDebugCode(processedCommand.parameters)
+          break
+        case 'create_component':
+          await this.executeCreateComponent(processedCommand.parameters)
+          break
+        default:
+          await this.provideGeneralResponse(command)
+      }
+    } catch (error) {
+      console.error('Erro ao processar comando de voz:', error)
+      this.speak('Desculpe, não consegui processar esse comando.')
+    }
+  }
+
+  // Interpretar comando usando Gemini
+  private async interpretCommand(command: string): Promise<{
+    action: string
+    parameters: Record<string, any>
+    confidence: number
+  }> {
+    const prompt = `
+Interprete este comando de voz para uma IDE web: "${command}"
+
+Identifique a ação que o usuário quer realizar e extraia os parâmetros necessários.
+
+Ações possíveis:
+- generate_interface: gerar uma interface/página
+- explain_code: explicar código
+- debug_code: debugar código
+- create_component: criar componente específico
+- general_question: pergunta geral
+
+Retorne no formato JSON:
+{
+  "action": "tipo_da_acao",
+  "parameters": {"param1": "valor1"},
+  "confidence": 0.8
 }
+`
+
+    try {
+      const result = await geminiService.processMessage(prompt)
+      const jsonMatch = result.match(/```json\n([\s\S]*?)\n```/) || result.match(/\{[\s\S]*\}/)
+      
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1] || jsonMatch[0])
+      }
+      
+      return {
+        action: 'general_question',
+        parameters: { question: command },
+        confidence: 0.5
+      }
+    } catch (error) {
+      console.error('Erro ao interpretar comando:', error)
+      return {
+        action: 'general_question',
+        parameters: { question: command },
+        confidence: 0.1
+      }
+    }
+  }
+
+  // Executar geração de interface
+  private async executeGenerateInterface(params: any) {
+    try {
+      const description = params.description || params.interface || 'interface básica'
+      this.speak(`Gerando interface: ${description}`)
+      
+      const result = await geminiService.generateInterface(description)
+      
+      // Disparar evento customizado para a UI
+      window.dispatchEvent(new CustomEvent('voice-generate-interface', {
+        detail: result
+      }))
+      
+      this.speak('Interface gerada com sucesso!')
+    } catch (error) {
+      this.speak('Erro ao gerar interface.')
+    }
+  }
+
+  // Executar explicação de código
+  private async executeExplainCode(params: any) {
+    try {
+      this.speak('Explicando o código atual...')
+      
+      // Buscar código atual (seria implementado na UI)
+      const currentCode = this.getCurrentCode()
+      if (!currentCode) {
+        this.speak('Nenhum código selecionado para explicar.')
+        return
+      }
+      
+      const explanation = await geminiService.explainCode(currentCode)
+      
+      // Disparar evento para mostrar explicação na UI
+      window.dispatchEvent(new CustomEvent('voice-explain-code', {
+        detail: { explanation }
+      }))
+      
+      // Ler explicação em voz alta (versão resumida)
+      const summary = explanation.substring(0, 200) + '...'
+      this.speak(summary)
+    } catch (error) {
+      this.speak('Erro ao explicar código.')
+    }
+  }
+
+  // Executar debug de código
+  private async executeDebugCode(params: any) {
+    try {
+      this.speak('Analisando código para debug...')
+      
+      const currentCode = this.getCurrentCode()
+      const currentError = this.getCurrentError()
+      
+      if (!currentCode || !currentError) {
+        this.speak('Código ou erro não encontrado.')
+        return
+      }
+      
+      const result = await geminiService.debugCode(currentCode, currentError)
+      
+      window.dispatchEvent(new CustomEvent('voice-debug-code', {
+        detail: result
+      }))
+      
+      this.speak('Solução encontrada! Verifique as sugestões.')
+    } catch (error) {
+      this.speak('Erro ao debugar código.')
+    }
+  }
+
+  // Executar criação de componente
+  private async executeCreateComponent(params: any) {
+    try {
+      const componentType = params.type || 'button'
+      this.speak(`Criando componente: ${componentType}`)
+      
+      const code = await geminiService.generateComponent(componentType, params)
+      
+      window.dispatchEvent(new CustomEvent('voice-create-component', {
+        detail: { code, type: componentType }
+      }))
+      
+      this.speak('Componente criado com sucesso!')
+    } catch (error) {
+      this.speak('Erro ao criar componente.')
+    }
+  }
+
+  // Resposta geral
+  private async provideGeneralResponse(command: string) {
+    try {
+      const response = await geminiService.processMessage(command, 'IDE colaborativa')
+      
+      window.dispatchEvent(new CustomEvent('voice-general-response', {
+        detail: { response }
+      }))
+      
+      // Ler resposta resumida
+      const summary = response.substring(0, 150) + '...'
+      this.speak(summary)
+    } catch (error) {
+      this.speak('Desculpe, não consegui processar sua pergunta.')
+    }
+  }
+
+  // Text-to-Speech
+  speak(text: string, lang = 'pt-BR'): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.synthesis) {
+        reject(new Error('Speech synthesis not supported'))
+        return
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = lang
+      utterance.rate = 0.9
+      utterance.pitch = 1
+
+      utterance.onend = () => resolve()
+      utterance.onerror = (error) => reject(error)
+
+      this.synthesis.speak(utterance)
+    })
+  }
+
+  // Registrar callback para comandos de voz
+  onVoiceCommand(callback: (result: VoiceCommand) => void) {
+    this.callbacks.push(callback)
+  }
+
+  // Remover callback
+  removeVoiceCommand(callback: (result: VoiceCommand) => void) {
+    const index = this.callbacks.indexOf(callback)
+    if (index > -1) {
+      this.callbacks.splice(index, 1)
+    }
+  }
+
+  // Métodos auxiliares (seriam implementados na UI)
+  private getCurrentCode(): string | null {
+    // Implementar na UI para buscar código atual
+    return null
+  }
+
+  private getCurrentError(): string | null {
+    // Implementar na UI para buscar erro atual
+    return null
+  }
+
+  // Comandos de voz pré-definidos
+  getAvailableCommands(): string[] {
+    return [
+      'Gere uma página de login',
+      'Crie um navbar responsivo',
+      'Adicione um botão animado',
+      'Explique este código',
+      'Debug este erro',
+      'Crie um componente de formulário',
+      'Otimize este código',
+      'Traduza para TypeScript',
+      'Crie um algoritmo quântico',
+      'Sugira uma arquitetura'
+    ]
+  }
+}
+
+export const voiceCommandService = new VoiceCommandService()
+export default voiceCommandService
