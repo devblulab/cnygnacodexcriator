@@ -4,14 +4,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/lib/firebase/auth-context";
 import { Toaster } from "@/components/ui/toaster";
 import { EditorProvider } from "@/context/editor-context";
 
 export const metadata: Metadata = {
   title: "QuantumCode - Modern Web IDE",
   description:
-    "A modern web-based IDE with AI assistance and Firebase integration",
+    "A modern web-based IDE with AI assistance",
   generator: "v0.dev",
 };
 
@@ -20,12 +19,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AuthProvider>
-            <EditorProvider>
-              {children}
-              <Toaster />
-            </EditorProvider>
-          </AuthProvider>
+          <EditorProvider>
+            {children}
+            <Toaster />
+          </EditorProvider>
         </ThemeProvider>
       </body>
     </html>
