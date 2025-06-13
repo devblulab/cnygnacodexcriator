@@ -1,85 +1,73 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para usuários
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função para verificar se o usuário é admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Regras para coleção de usuários
     match /users/{userId} {
-      // Usuários podem ler e escrever seus próprios dados
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Permitir leitura se for o próprio usuário ou admin
+      allow read: if isOwner(userId) || isAdmin();
 
-      // Admins podem ler todos os usuários
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Permitir criação apenas durante signup ou por admin
+      allow create: if isOwner(userId) || isAdmin();
 
-      // Admins podem atualizar roles de outros usuários
-      allow update: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt']);
+      // Permitir atualização se for o próprio usuário ou admin
+      allow update: if isOwner(userId) || isAdmin();
+
+      // Apenas admin pode deletar usuários
+      allow delete: if isAdmin();
     }
 
     // Regras para projetos
     match /projects/{projectId} {
-      // Usuários podem ler e escrever seus próprios projetos
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Permitir leitura se for público, próprio usuário, colaborador ou admin
+      allow read: if resource.data.isPublic == true || 
+                     isOwner(resource.data.ownerId) || 
+                     request.auth.uid in resource.data.collaborators ||
+                     isAdmin();
 
-      // Permitir criação de novos projetos
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Permitir criação se estiver autenticado
+      allow create: if isAuthenticated();
 
-      // Admins podem ler todos os projetos
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Permitir atualização se for o dono, colaborador ou admin
+      allow update: if isOwner(resource.data.ownerId) || 
+                       request.auth.uid in resource.data.collaborators ||
+                       isAdmin();
+
+      // Permitir exclusão se for o dono ou admin
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     // Regras para arquivos de projeto
     match /projects/{projectId}/files/{fileId} {
-      // Usuários podem ler e escrever arquivos de seus próprios projetos
-      allow read, write: if request.auth != null && 
-        request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.userId;
+      // Herdar permissões do projeto pai
+      allow read, write: if isAuthenticated() && (
+        get(/databases/$(database)/documents/projects/$(projectId)).data.isPublic == true ||
+        isOwner(get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId) ||
+        request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.collaborators ||
+        isAdmin()
+      );
     }
 
-    // Regras para sessões/tokens (se necessário)
-    match /sessions/{sessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-    }
-
-    // Regras para logs de atividade
-    match /activityLogs/{logId} {
-      // Usuários podem ler seus próprios logs
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-
-      // Sistema pode criar logs
-      allow create: if request.auth != null;
-
-      // Admins podem ler todos os logs
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Regras para configurações do sistema
-    match /systemConfig/{configId} {
-      // Apenas admins podem ler e escrever configurações do sistema
-      allow read, write: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Regras para compartilhamento de projetos
-    match /sharedProjects/{shareId} {
-      // Usuário que criou o compartilhamento pode gerenciar
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
-
-      // Usuários com acesso podem ler
-      allow read: if request.auth != null && 
-        request.auth.uid in resource.data.sharedWith;
-    }
-
-    // Negar acesso a tudo o mais
+    // Regras para outras coleções (admin apenas)
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

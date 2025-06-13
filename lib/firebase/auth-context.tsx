@@ -31,6 +31,7 @@ interface AuthContextType {
   userData: UserData | null
   loading: boolean
   firebaseInitialized: boolean
+  isAdmin: boolean
   error: string | null
   signUp: (email: string, password: string, displayName?: string) => Promise<User>
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<any>
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [firebaseInitialized, setFirebaseInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
 
   useEffect(() => {
     // Verificar se estamos no cliente e se o Firebase está inicializado
@@ -73,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Definir cookie de sessão
           const token = await user.getIdToken()
           setSessionCookie(token, false)
-          
+
           // Buscar dados do usuário no Firestore
           let firestoreUser = await getUserByUid(user.uid)
 
@@ -91,14 +93,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           setUserData(firestoreUser)
+          setIsAdmin(firestoreUser?.role === 'admin')
         } catch (error) {
           console.error('Erro ao carregar dados do usuário:', error)
           setUserData(null)
+          setIsAdmin(false)
         }
       } else {
         setUserData(null)
         // Limpar cookie de sessão quando não há usuário
         clearSessionCookie()
+        setIsAdmin(false)
       }
 
       setLoading(false)
@@ -193,6 +198,7 @@ const signUp = async (email: string, password: string, displayName?: string) => 
     userData,
     loading,
     firebaseInitialized,
+    isAdmin,
     error,
     signUp,
     signIn,
