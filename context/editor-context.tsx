@@ -1,11 +1,8 @@
+
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useState, useEffect } from "react"
-import { useAuth } from "@/lib/firebase/auth-context"
-import { db } from "@/lib/firebase/config"
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore"
 
 export type FileType = {
   id: string
@@ -25,7 +22,6 @@ export type ProjectType = {
   collaborators: string[]
   createdAt?: number
   updatedAt?: number
-  ownerId?: string
 }
 
 type EditorContextType = {
@@ -34,7 +30,7 @@ type EditorContextType = {
   currentFile: FileType | null
   setCurrentProject: (project: ProjectType) => void
   setCurrentFile: (file: FileType) => void
-  createProject: (project: Omit<ProjectType, "id" | "createdAt" | "updatedAt" | "ownerId">) => Promise<string>
+  createProject: (project: Omit<ProjectType, "id" | "createdAt" | "updatedAt">) => Promise<string>
   updateProject: (project: ProjectType) => Promise<void>
   deleteProject: (projectId: string) => Promise<void>
   createFile: (projectId: string, file: Omit<FileType, "id">) => Promise<string>
@@ -44,107 +40,143 @@ type EditorContextType = {
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined)
 
+// Mock data para projetos exemplo
+const mockProjects: ProjectType[] = [
+  {
+    id: "project_1",
+    name: "Meu Primeiro Projeto",
+    description: "Um projeto de exemplo",
+    files: [
+      {
+        id: "file_1",
+        name: "index.html",
+        content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Projeto</title>
+</head>
+<body>
+    <h1>Olá, Mundo!</h1>
+    <p>Este é o meu primeiro projeto no QuantumCode.</p>
+</body>
+</html>`,
+        language: "html",
+        path: "/index.html",
+        lastModified: Date.now()
+      },
+      {
+        id: "file_2",
+        name: "style.css",
+        content: `body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+p {
+    line-height: 1.6;
+    color: #666;
+}`,
+        language: "css",
+        path: "/style.css",
+        lastModified: Date.now()
+      }
+    ],
+    isPublic: true,
+    collaborators: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }
+]
+
 export function EditorProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
   const [projects, setProjects] = useState<ProjectType[]>([])
   const [currentProject, setCurrentProject] = useState<ProjectType | null>(null)
   const [currentFile, setCurrentFile] = useState<FileType | null>(null)
 
-  // Fetch user's projects when user changes
+  // Carregar projetos exemplo na inicialização
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user) {
-        setProjects([])
-        setCurrentProject(null)
-        setCurrentFile(null)
-        return
-      }
-
+    const savedProjects = localStorage.getItem('quantumcode-projects')
+    if (savedProjects) {
       try {
-        const projectsRef = collection(db, "projects")
-        const q = query(projectsRef, where("ownerId", "==", user.uid))
-        const querySnapshot = await getDocs(q)
-
-        const fetchedProjects: ProjectType[] = []
-        querySnapshot.forEach((doc) => {
-          fetchedProjects.push({ id: doc.id, ...doc.data() } as ProjectType)
-        })
-
-        setProjects(fetchedProjects)
-
-        // Set current project to the first one if none is selected
-        if (fetchedProjects.length > 0 && !currentProject) {
-          setCurrentProject(fetchedProjects[0])
-
-          // Set current file to the first one in the project
-          if (fetchedProjects[0].files.length > 0) {
-            setCurrentFile(fetchedProjects[0].files[0])
+        const parsedProjects = JSON.parse(savedProjects)
+        setProjects(parsedProjects)
+        if (parsedProjects.length > 0) {
+          setCurrentProject(parsedProjects[0])
+          if (parsedProjects[0].files.length > 0) {
+            setCurrentFile(parsedProjects[0].files[0])
           }
         }
       } catch (error) {
-        console.error("Error fetching projects:", error)
+        console.error('Erro ao carregar projetos salvos:', error)
+        // Se houver erro, usar projetos mock
+        setProjects(mockProjects)
+        setCurrentProject(mockProjects[0])
+        setCurrentFile(mockProjects[0].files[0])
       }
+    } else {
+      // Primeira vez - usar projetos mock
+      setProjects(mockProjects)
+      setCurrentProject(mockProjects[0])
+      setCurrentFile(mockProjects[0].files[0])
     }
+  }, [])
 
-    fetchProjects()
-  }, [user])
+  // Salvar projetos no localStorage sempre que mudarem
+  useEffect(() => {
+    if (projects.length > 0) {
+      localStorage.setItem('quantumcode-projects', JSON.stringify(projects))
+    }
+  }, [projects])
 
-  const createProject = async (project: Omit<ProjectType, "id" | "createdAt" | "updatedAt" | "ownerId">) => {
-    if (!user) throw new Error("User not authenticated")
-
+  const createProject = async (project: Omit<ProjectType, "id" | "createdAt" | "updatedAt">) => {
     try {
       const timestamp = Date.now()
-      const projectData = {
+      const projectId = `project_${timestamp}`
+      
+      const newProject = {
+        id: projectId,
         ...project,
         createdAt: timestamp,
         updatedAt: timestamp,
-        ownerId: user.uid,
-      }
-
-      const docRef = await addDoc(collection(db, "projects"), projectData)
-
-      const newProject = {
-        id: docRef.id,
-        ...projectData,
       }
 
       setProjects((prev) => [...prev, newProject])
-
-      return docRef.id
+      return projectId
     } catch (error) {
-      console.error("Error creating project:", error)
+      console.error("Erro ao criar projeto:", error)
       throw error
     }
   }
 
   const updateProject = async (project: ProjectType) => {
-    if (!user) throw new Error("User not authenticated")
-
     try {
-      const projectRef = doc(db, "projects", project.id)
-
-      await updateDoc(projectRef, {
+      const updatedProject = {
         ...project,
         updatedAt: Date.now(),
-      })
+      }
 
-      setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...project, updatedAt: Date.now() } : p)))
+      setProjects((prev) => prev.map((p) => (p.id === project.id ? updatedProject : p)))
 
       if (currentProject?.id === project.id) {
-        setCurrentProject({ ...project, updatedAt: Date.now() })
+        setCurrentProject(updatedProject)
       }
     } catch (error) {
-      console.error("Error updating project:", error)
+      console.error("Erro ao atualizar projeto:", error)
       throw error
     }
   }
 
   const deleteProject = async (projectId: string) => {
-    if (!user) throw new Error("User not authenticated")
-
     try {
-      await deleteDoc(doc(db, "projects", projectId))
-
       setProjects((prev) => prev.filter((p) => p.id !== projectId))
 
       if (currentProject?.id === projectId) {
@@ -152,17 +184,15 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setCurrentFile(null)
       }
     } catch (error) {
-      console.error("Error deleting project:", error)
+      console.error("Erro ao deletar projeto:", error)
       throw error
     }
   }
 
   const createFile = async (projectId: string, file: Omit<FileType, "id">) => {
-    if (!user) throw new Error("User not authenticated")
-
     try {
       const project = projects.find((p) => p.id === projectId)
-      if (!project) throw new Error("Project not found")
+      if (!project) throw new Error("Projeto não encontrado")
 
       const fileId = `file_${Date.now()}`
       const newFile = { id: fileId, ...file }
@@ -174,16 +204,15 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       }
 
       await updateProject(updatedProject)
-
       return fileId
     } catch (error) {
-      console.error("Error creating file:", error)
+      console.error("Erro ao criar arquivo:", error)
       throw error
     }
   }
 
   const saveFile = async (file: FileType) => {
-    if (!user || !currentProject) throw new Error("User not authenticated or no project selected")
+    if (!currentProject) throw new Error("Nenhum projeto selecionado")
 
     try {
       const updatedFiles = currentProject.files.map((f) =>
@@ -198,22 +227,20 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
       await updateProject(updatedProject)
 
-      // Update current file if it's the one being saved
+      // Atualizar arquivo atual se for o que está sendo salvo
       if (currentFile?.id === file.id) {
         setCurrentFile({ ...file, lastModified: Date.now() })
       }
     } catch (error) {
-      console.error("Error saving file:", error)
+      console.error("Erro ao salvar arquivo:", error)
       throw error
     }
   }
 
   const deleteFile = async (projectId: string, fileId: string) => {
-    if (!user) throw new Error("User not authenticated")
-
     try {
       const project = projects.find((p) => p.id === projectId)
-      if (!project) throw new Error("Project not found")
+      if (!project) throw new Error("Projeto não encontrado")
 
       const updatedProject = {
         ...project,
@@ -223,12 +250,12 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
       await updateProject(updatedProject)
 
-      // If the deleted file is the current file, set current file to null
+      // Se o arquivo deletado é o arquivo atual, limpar seleção
       if (currentFile?.id === fileId) {
         setCurrentFile(null)
       }
     } catch (error) {
-      console.error("Error deleting file:", error)
+      console.error("Erro ao deletar arquivo:", error)
       throw error
     }
   }
@@ -257,7 +284,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 export function useEditor() {
   const context = useContext(EditorContext)
   if (context === undefined) {
-    throw new Error("useEditor must be used within an EditorProvider")
+    throw new Error("useEditor deve ser usado dentro de um EditorProvider")
   }
   return context
 }
