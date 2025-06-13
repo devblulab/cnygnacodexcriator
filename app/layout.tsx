@@ -8,7 +8,7 @@ import { AuthProvider } from "@/lib/firebase/auth-context";
 import { Toaster } from "@/components/ui/toaster";
 import { EditorProvider } from "@/context/editor-context";
 
-// Fonte Google: Inter (corrigido)
+// Fonte Google: Inter
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",

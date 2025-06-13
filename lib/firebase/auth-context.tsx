@@ -86,12 +86,20 @@ const signUp = async (email: string, password: string, displayName?: string) => 
   }
 
 const signIn = async (email: string, password: string) => {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
-    // Atualizar último login
-    await updateUserLastLogin(userCredential.user.uid)
-
-    return userCredential.user
+      if (userCredential?.user) {
+        // Atualizar último login
+        await updateUserLastLogin(userCredential.user.uid)
+        return userCredential
+      } else {
+        throw new Error("No user returned from authentication")
+      }
+    } catch (error) {
+      console.error("Sign in error:", error)
+      throw error
+    }
   }
 
   const logout = () => {

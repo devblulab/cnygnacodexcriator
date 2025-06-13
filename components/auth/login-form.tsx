@@ -115,6 +115,11 @@ export default function LoginForm() {
       return
     }
 
+    if (!email || !password) {
+      setError("Please enter both email and password.")
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -126,32 +131,34 @@ export default function LoginForm() {
 
         // Get the token and set the session cookie
         const token = await userCredential.user.getIdToken()
-        document.cookie = `session=${token}; path=/; max-age=3600; SameSite=Strict;`
+        document.cookie = `session=${token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`
         console.log("Session cookie set")
 
         await createOrUpdateUserDocument(userCredential.user)
+        
+        // Force a small delay to ensure cookie is set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        console.log("Redirecting to dashboard...")
+        router.push("/dashboard")
+      } else {
+        setError("Login failed: No user returned from authentication.")
       }
-
-      router.push("/dashboard")
     } catch (error: any) {
       console.error("Login error:", error)
 
-      if (error.code === "auth/invalid-credential") {
-        setError(
-          "Invalid email or password. If you're sure your credentials are correct, there might be an issue with the Firebase configuration.",
-        )
+      if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-email" || error.code === "auth/wrong-password") {
+        setError("Email ou senha incorretos. Verifique suas credenciais e tente novamente.")
+      } else if (error.code === "auth/user-not-found") {
+        setError("Usuário não encontrado. Você precisa criar uma conta primeiro.")
       } else if (error.code === "auth/operation-not-allowed") {
-        setError(
-          "Email/password sign-in is not enabled for this project. You need to enable it in the Firebase console.",
-        )
-      } else if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
-        setError("Invalid email or password. Please try again.")
+        setError("Login por email/senha não está habilitado. Verifique a configuração do Firebase.")
       } else if (error.code === "auth/too-many-requests") {
-        setError("Too many failed login attempts. Please try again later or reset your password.")
+        setError("Muitas tentativas de login. Tente novamente em alguns minutos.")
       } else if (error.code === "auth/network-request-failed") {
-        setError("Network error. Please check your internet connection and try again.")
+        setError("Erro de rede. Verifique sua conexão e tente novamente.")
       } else {
-        setError(error.message || "Failed to sign in")
+        setError(error.message || "Falha no login. Tente novamente.")
       }
     } finally {
       setLoading(false)
