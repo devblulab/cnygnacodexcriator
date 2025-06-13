@@ -6,20 +6,18 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Define public paths that don't require authentication
-  const isPublicPath = path === "/login" || path === "/signup" || path === "/" || path.startsWith("/debug/") // Permitir acesso às páginas de debug
+  const isPublicPath = path === "/login" || path === "/signup" || path === "/" || path.startsWith("/debug/")
 
   // Check if user is authenticated by looking for the session cookie
-  const session = cookies().get("session")?.value
-  const hasValidSession = session && session.length > 0
+  const sessionCookie = request.cookies.get("session")
+  const session = sessionCookie?.value
+  const hasValidSession = session && session.length > 10 // JWT tokens são mais longos
 
-  // Log para depuração (aparecerá no console do servidor)
+  // Log para depuração
   console.log(`[Middleware] Path: ${path}, Public: ${isPublicPath}, Session: ${hasValidSession ? "Valid" : "Invalid/None"}`)
 
-  // If the path is for admin routes, we'll need to verify admin status
-  const isAdminPath = path.startsWith("/admin")
-
-  // Always allow access to debug pages
-  if (path.startsWith("/debug/")) {
+  // Always allow access to debug pages and static files
+  if (path.startsWith("/debug/") || path.startsWith("/_next/") || path.includes(".")) {
     return NextResponse.next()
   }
 
@@ -34,12 +32,6 @@ export async function middleware(request: NextRequest) {
     // Redirect to dashboard if already logged in and trying to access login/signup
     console.log(`[Middleware] Redirecting to dashboard: User is logged in and accessing ${path}`)
     return NextResponse.redirect(new URL("/dashboard", request.url))
-  }
-
-  // For admin routes, you would verify admin status here
-  if (isAdminPath) {
-    // In a real implementation, you would verify the token and check admin status
-    // For now, we'll just let the client-side handle this
   }
 
   return NextResponse.next()

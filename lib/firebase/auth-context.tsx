@@ -24,6 +24,7 @@ import {
   updateUserLastLogin,
   UserData 
 } from "./users"
+import { setSessionCookie, clearSessionCookie } from "../utils/cookies"
 
 interface AuthContextType {
   user: User | null
@@ -49,7 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Verificar se o Firebase está inicializado
+    // Verificar se estamos no cliente e se o Firebase está inicializado
+    if (typeof window === 'undefined') {
+      return
+    }
+
     if (!auth) {
       setError("Firebase Auth não está inicializado")
       setLoading(false)
@@ -65,6 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (user) {
         try {
+          // Definir cookie de sessão
+          const token = await user.getIdToken()
+          setSessionCookie(token, false)
+          
           // Buscar dados do usuário no Firestore
           let firestoreUser = await getUserByUid(user.uid)
 
@@ -89,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUserData(null)
         // Limpar cookie de sessão quando não há usuário
-        document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        clearSessionCookie()
       }
 
       setLoading(false)
@@ -171,7 +180,7 @@ const signUp = async (email: string, password: string, displayName?: string) => 
   const logout = async () => {
     try {
       // Limpar cookie de sessão
-      document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      clearSessionCookie()
       await signOut(auth)
     } catch (error) {
       console.error("Logout error:", error)

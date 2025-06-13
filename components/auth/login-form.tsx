@@ -120,61 +120,56 @@ export default function LoginForm() {
     setError("")
 
     if (!firebaseInitialized) {
-      setError("Firebase is not properly initialized. Please check your environment variables and configuration.")
+      setError("Firebase não está inicializado. Verifique a configuração.")
       return
     }
 
     if (!email || !password) {
-      setError("Please enter both email and password.")
+      setError("Digite email e senha.")
       return
     }
 
     setLoading(true)
 
     try {
-      console.log("Attempting to sign in with email:", email)
+      console.log("Tentando fazer login com email:", email)
       const userCredential = await signIn(email, password, rememberMe)
 
       if (userCredential?.user) {
-        console.log("User signed in successfully:", userCredential.user.uid)
+        console.log("Login realizado com sucesso:", userCredential.user.uid)
 
-        // Get the token and set the session cookie
-        const token = await userCredential.user.getIdToken()
-        document.cookie = `session=${token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`
-        console.log("Session cookie set")
-
-        await createOrUpdateUserDocument(userCredential.user)
-        
-        // Force a small delay to ensure cookie is set
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
         // Salvar email se "lembrar" estiver marcado
         if (rememberMe) {
           localStorage.setItem('rememberedEmail', email)
         } else {
           localStorage.removeItem('rememberedEmail')
         }
+
+        await createOrUpdateUserDocument(userCredential.user)
         
-        console.log("Redirecting to dashboard...")
-        router.push("/dashboard")
+        // Aguardar um pouco para garantir que o cookie foi definido
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        console.log("Redirecionando para dashboard...")
+        window.location.href = "/dashboard"
       } else {
-        setError("Login failed: No user returned from authentication.")
+        setError("Falha no login: Nenhum usuário retornado.")
       }
     } catch (error: any) {
-      console.error("Login error:", error)
+      console.error("Erro de login:", error)
 
       if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-email" || error.code === "auth/wrong-password") {
-        setError("Email ou senha incorretos. Verifique suas credenciais e tente novamente.")
+        setError("Email ou senha incorretos.")
       } else if (error.code === "auth/user-not-found") {
-        setError("Usuário não encontrado. Você precisa criar uma conta primeiro.")
+        setError("Usuário não encontrado. Crie uma conta primeiro.")
       } else if (error.code === "auth/operation-not-allowed") {
-        setError("Login por email/senha não está habilitado. Verifique a configuração do Firebase.")
+        setError("Login por email/senha não está habilitado no Firebase.")
       } else if (error.code === "auth/too-many-requests") {
-        setError("Muitas tentativas de login. Tente novamente em alguns minutos.")
+        setError("Muitas tentativas. Aguarde alguns minutos.")
       } else if (error.code === "auth/network-request-failed") {
-        setError("Erro de rede. Verifique sua conexão e tente novamente.")
+        setError("Erro de rede. Verifique sua conexão.")
       } else {
-        setError(error.message || "Falha no login. Tente novamente.")
+        setError(error.message || "Erro no login.")
       }
     } finally {
       setLoading(false)
