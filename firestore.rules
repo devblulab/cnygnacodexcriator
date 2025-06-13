@@ -3,30 +3,163 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Função auxiliar para verificar se o usuário é admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Função auxiliar para verificar se o usuário é o proprietário
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Função auxiliar para verificar autenticação
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     // Regras para a coleção de usuários
     match /users/{userId} {
-      // Usuários podem ler e atualizar apenas seus próprios dados
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Usuários podem ler apenas seus próprios dados ou se forem admin
+      allow read: if isOwner(userId) || isAdmin();
       
-      // Apenas admins podem criar novos usuários
-      allow create: if request.auth != null;
+      // Usuários podem atualizar apenas seus próprios dados (exceto role)
+      allow update: if isOwner(userId) && 
+                    (!('role' in request.resource.data) || 
+                     resource.data.role == request.resource.data.role);
       
-      // Apenas admins podem deletar usuários
-      allow delete: if request.auth != null && 
-        resource.data.role == 'admin';
+      // Apenas usuários autenticados podem criar conta (signup)
+      allow create: if isAuthenticated() && 
+                    isOwner(userId) && 
+                    request.resource.data.role == 'user';
+      
+      // Apenas admins podem deletar usuários ou alterar roles
+      allow delete, update: if isAdmin();
     }
     
     // Regras para projetos do usuário
     match /projects/{projectId} {
-      // Usuários podem acessar apenas seus próprios projetos
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
+      // Usuários podem ler apenas seus próprios projetos
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.userId) || isAdmin());
       
-      // Permitir criação de novos projetos
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
+      // Usuários podem criar projetos apenas para si mesmos
+      allow create: if isAuthenticated() && 
+                    isOwner(request.resource.data.userId);
+      
+      // Usuários podem atualizar/deletar apenas seus próprios projetos
+      allow update, delete: if isAuthenticated() && 
+                            (isOwner(resource.data.userId) || isAdmin());
+      
+      // Subcoleção para arquivos do projeto
+      match /files/{fileId} {
+        allow read, write: if isAuthenticated() && 
+                          (isOwner(get(/databases/$(database)/documents/projects/$(projectId)).data.userId) || 
+                           isAdmin());
+      }
+      
+      // Subcoleção para versões/commits do projeto
+      match /versions/{versionId} {
+        allow read, write: if isAuthenticated() && 
+                          (isOwner(get(/databases/$(database)/documents/projects/$(projectId)).data.userId) || 
+                           isAdmin());
+      }
     }
     
-    // Outras coleções podem ser adicionadas aqui
+    // Regras para configurações do usuário
+    match /userSettings/{userId} {
+      allow read, write: if isOwner(userId);
+      allow read: if isAdmin();
+    }
+    
+    // Regras para templates de projeto (públicos)
+    match /projectTemplates/{templateId} {
+      // Todos podem ler templates
+      allow read: if true;
+      
+      // Apenas admins podem criar/modificar templates
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Regras para sessões ativas (para controle de login)
+    match /activeSessions/{sessionId} {
+      allow read, write: if isAuthenticated() && 
+                        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Regras para logs de atividade (apenas admins)
+    match /activityLogs/{logId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+    
+    // Regras para compartilhamento de projetos
+    match /sharedProjects/{shareId} {
+      // Qualquer um pode ler projetos compartilhados publicamente
+      allow read: if resource.data.isPublic == true;
+      
+      // Usuários autenticados podem ler se tiverem acesso
+      allow read: if isAuthenticated() && 
+                  (request.auth.uid in resource.data.allowedUsers ||
+                   isOwner(resource.data.ownerId) || isAdmin());
+      
+      // Apenas o proprietário pode criar/modificar compartilhamentos
+      allow create, update, delete: if isAuthenticated() && 
+                                    isOwner(resource.data.ownerId);
+    }
+    
+    // Regras para comentários em projetos compartilhados
+    match /projectComments/{commentId} {
+      // Usuários podem ler comentários de projetos que têm acesso
+      allow read: if isAuthenticated();
+      
+      // Usuários podem criar comentários em projetos que têm acesso
+      allow create: if isAuthenticated() && 
+                    isOwner(request.resource.data.authorId);
+      
+      // Usuários podem editar/deletar apenas seus próprios comentários
+      allow update, delete: if isAuthenticated() && 
+                            (isOwner(resource.data.authorId) || isAdmin());
+    }
+    
+    // Regras para notificações do usuário
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && 
+                        isOwner(resource.data.userId);
+      allow create: if isAuthenticated();
+    }
+    
+    // Regras para feedback/suporte
+    match /supportTickets/{ticketId} {
+      // Usuários podem ler apenas seus próprios tickets
+      allow read, create, update: if isAuthenticated() && 
+                                  isOwner(resource.data.userId);
+      
+      // Admins podem ler/modificar todos os tickets
+      allow read, update: if isAdmin();
+    }
+    
+    // Regras para estatísticas do sistema (apenas admins)
+    match /systemStats/{statId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Regras para configurações globais do sistema (apenas admins)
+    match /systemConfig/{configId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Regras para backups automáticos (apenas sistema)
+    match /backups/{backupId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Regra padrão: negar acesso a qualquer coleção não especificada
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
