@@ -1,46 +1,43 @@
 
-"use client"
-
-import { auth, db } from './config'
-
-// Verificar se o Firebase está inicializado
-export const isFirebaseInitialized = () => {
-  return auth !== null && db !== null
+// Firebase client configuration
+export const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
-// Função para aguardar a inicialização do Firebase
-export const waitForFirebaseInit = async (timeout = 10000): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (isFirebaseInitialized()) {
-      resolve(true)
-      return
-    }
+// Verificar se todas as variáveis necessárias estão definidas
+const requiredEnvVars = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID'
+]
 
-    const startTime = Date.now()
-    const checkInterval = setInterval(() => {
-      if (isFirebaseInitialized()) {
-        clearInterval(checkInterval)
-        resolve(true)
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(checkInterval)
-        resolve(false)
-      }
-    }, 100)
-  })
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
+
+if (missingVars.length > 0) {
+  console.error('Firebase: Missing required environment variables:', missingVars)
+  console.error('Please check your .env.local file and ensure all Firebase variables are set')
+} else {
+  console.log('Firebase: All environment variables are properly configured')
 }
 
-// Função para verificar se o usuário está autenticado
-export const checkAuthStatus = async () => {
-  if (!isFirebaseInitialized()) {
-    return false
-  }
+export const isConfigValid = missingVars.length === 0
 
-  return new Promise((resolve) => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe()
-      resolve(!!user)
-    })
-  })
-}
+// Verificar se estamos usando os emuladores
+export const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true'
 
-export { auth, db }
+console.log('Firebase config loaded:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,  
+  hasProjectId: !!firebaseConfig.projectId,
+  isValid: isConfigValid,
+  useEmulators
+})

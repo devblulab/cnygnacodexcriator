@@ -1,43 +1,65 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
-export async function middleware(request: NextRequest) {
-  // Get the path
-  const path = request.nextUrl.pathname
+import { NextRequest, NextResponse } from 'next/server'
 
-  // Define public paths that don't require authentication
-  const isPublicPath = path === "/login" || path === "/signup" || path === "/" || path.startsWith("/debug/")
+// Rotas que não precisam de autenticação
+const publicRoutes = [
+  '/',
+  '/login',
+  '/signup', 
+  '/debug/env',
+  '/debug/firebase',
+  '/debug/auth',
+  '/debug/setup-admin'
+]
 
-  // Check if user is authenticated by looking for the session cookie
-  const sessionCookie = request.cookies.get("session")
-  const session = sessionCookie?.value
-  const hasValidSession = session && session.length > 10 // JWT tokens são mais longos
+// Rotas protegidas que precisam de autenticação
+const protectedRoutes = [
+  '/dashboard',
+  '/editor', 
+  '/profile',
+  '/projects',
+  '/admin'
+]
 
-  // Log para depuração
-  console.log(`[Middleware] Path: ${path}, Public: ${isPublicPath}, Session: ${hasValidSession ? "Valid" : "Invalid/None"}`)
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const sessionCookie = request.cookies.get('session')?.value
 
-  // Always allow access to debug pages and static files
-  if (path.startsWith("/debug/") || path.startsWith("/_next/") || path.includes(".")) {
+  console.log(`[Middleware] Path: ${pathname}, Public: ${isPublicRoute(pathname)}, Session: ${sessionCookie ? 'Valid' : 'Invalid/None'}`)
+
+  // Se é uma rota pública, permitir acesso
+  if (isPublicRoute(pathname)) {
     return NextResponse.next()
   }
 
-  // Redirect logic
-  if (!hasValidSession && !isPublicPath) {
-    // Redirect to login if trying to access protected route without session
-    console.log(`[Middleware] Redirecting to login: No valid session found for protected path ${path}`)
-    return NextResponse.redirect(new URL("/login", request.url))
+  // Se é uma rota protegida e não tem sessão, redirecionar para login
+  if (isProtectedRoute(pathname) && !sessionCookie) {
+    console.log(`[Middleware] Redirecting to login from ${pathname}`)
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (hasValidSession && (path === "/login" || path === "/signup")) {
-    // Redirect to dashboard if already logged in and trying to access login/signup
-    console.log(`[Middleware] Redirecting to dashboard: User is logged in and accessing ${path}`)
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+  // Se tem sessão mas está tentando acessar login/signup, redirecionar para dashboard
+  if (sessionCookie && (pathname === '/login' || pathname === '/signup')) {
+    console.log(`[Middleware] Redirecting to dashboard from ${pathname}`)
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return NextResponse.next()
 }
 
-// Configure which paths the middleware runs on
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some(route => {
+    if (route === '/') return pathname === '/'
+    return pathname.startsWith(route)
+  })
+}
+
+function isProtectedRoute(pathname: string): boolean {
+  return protectedRoutes.some(route => pathname.startsWith(route))
+}
+
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).*)',
+  ],
 }

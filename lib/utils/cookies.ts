@@ -1,29 +1,21 @@
+export function setSessionCookie(token: string, persistent: boolean = false) {
+  const maxAge = persistent ? 60 * 60 * 24 * 30 : 60 * 60 // 30 dias ou 1 hora
+  const secure = window.location.protocol === 'https:' ? 'Secure' : ''
 
-// Função para definir cookie de sessão
-export const setSessionCookie = (token: string, rememberMe: boolean = false) => {
-  const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 // 30 dias ou 1 dia
-  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'Secure;' : ''
-  
-  if (typeof document !== 'undefined') {
-    document.cookie = `session=${token}; path=/; max-age=${maxAge}; SameSite=Strict; ${secure}`
-  }
+  document.cookie = `session=${token}; path=/; max-age=${maxAge}; SameSite=Strict; ${secure}`
+  console.log(`Session cookie set (persistent: ${persistent})`)
 }
 
-// Função para limpar cookie de sessão
-export const clearSessionCookie = () => {
-  if (typeof document !== 'undefined') {
-    document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-  }
+export function clearSessionCookie() {
+  document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict'
+  console.log('Session cookie cleared')
 }
 
-// Função para obter cookie de sessão
-export const getSessionCookie = (): string | null => {
-  if (typeof document === 'undefined') {
-    return null
-  }
+export function getSessionCookie(): string | null {
+  if (typeof document === 'undefined') return null
 
   const cookies = document.cookie.split(';')
-  for (let cookie of cookies) {
+  for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=')
     if (name === 'session') {
       return value
