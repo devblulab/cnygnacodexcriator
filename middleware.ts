@@ -10,9 +10,10 @@ export async function middleware(request: NextRequest) {
 
   // Check if user is authenticated by looking for the session cookie
   const session = cookies().get("session")?.value
+  const hasValidSession = session && session.length > 0
 
   // Log para depuração (aparecerá no console do servidor)
-  console.log(`[Middleware] Path: ${path}, Public: ${isPublicPath}, Session: ${session ? "Exists" : "None"}`)
+  console.log(`[Middleware] Path: ${path}, Public: ${isPublicPath}, Session: ${hasValidSession ? "Valid" : "Invalid/None"}`)
 
   // If the path is for admin routes, we'll need to verify admin status
   const isAdminPath = path.startsWith("/admin")
@@ -23,16 +24,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect logic
-  if (!session && !isPublicPath) {
+  if (!hasValidSession && !isPublicPath) {
     // Redirect to login if trying to access protected route without session
-    console.log(`[Middleware] Redirecting to login: No session found for protected path ${path}`)
+    console.log(`[Middleware] Redirecting to login: No valid session found for protected path ${path}`)
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  if (session && isPublicPath && path !== "/") {
-    // Redirect to dashboard if already logged in and trying to access public route
-    // But allow access to the home page even when logged in
-    console.log(`[Middleware] Redirecting to dashboard: User is logged in and accessing public path ${path}`)
+  if (hasValidSession && (path === "/login" || path === "/signup")) {
+    // Redirect to dashboard if already logged in and trying to access login/signup
+    console.log(`[Middleware] Redirecting to dashboard: User is logged in and accessing ${path}`)
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 

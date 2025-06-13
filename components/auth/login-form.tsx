@@ -16,8 +16,17 @@ import { AlertCircle, Loader2 } from "lucide-react"
 import { getFirebaseFirestore } from "@/lib/firebase/config"
 
 export default function LoginForm() {
+  // Carregar email salvo no localStorage
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail')
+    if (savedEmail) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [availableAuthMethods, setAvailableAuthMethods] = useState<string[]>([])
@@ -124,7 +133,7 @@ export default function LoginForm() {
 
     try {
       console.log("Attempting to sign in with email:", email)
-      const userCredential = await signIn(email, password)
+      const userCredential = await signIn(email, password, rememberMe)
 
       if (userCredential?.user) {
         console.log("User signed in successfully:", userCredential.user.uid)
@@ -138,6 +147,13 @@ export default function LoginForm() {
         
         // Force a small delay to ensure cookie is set
         await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Salvar email se "lembrar" estiver marcado
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email)
+        } else {
+          localStorage.removeItem('rememberedEmail')
+        }
         
         console.log("Redirecting to dashboard...")
         router.push("/dashboard")
@@ -396,6 +412,20 @@ export default function LoginForm() {
                   required
                   disabled={!firebaseInitialized || loading}
                 />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  disabled={!firebaseInitialized || loading}
+                />
+                <Label htmlFor="remember-me" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Manter conectado
+                </Label>
               </div>
             </CardContent>
             <CardFooter>

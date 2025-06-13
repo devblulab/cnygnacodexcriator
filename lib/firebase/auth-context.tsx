@@ -7,9 +7,16 @@ import { auth } from "./config"
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
   signOut,
   onAuthStateChanged,
   User,
+  setPersistence,
+  browserSessionPersistence,
+  browserLocalPersistence,
+  fetchSignInMethodsForEmail
 } from "firebase/auth"
 import { 
   createUserInFirestore, 
@@ -22,9 +29,14 @@ interface AuthContextType {
   user: User | null
   userData: UserData | null
   loading: boolean
+  firebaseInitialized: boolean
+  error: string | null
   signUp: (email: string, password: string, displayName?: string) => Promise<User>
-  signIn: (email: string, password: string) => Promise<User>
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<any>
+  signInWithGoogle: () => Promise<any>
+  signInWithGithub: () => Promise<any>
   logout: () => Promise<void>
+  checkAuthMethods: (email: string) => Promise<string[]>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -33,9 +45,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [firebaseInitialized, setFirebaseInitialized] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Verificar se o Firebase está inicializado
+    if (!auth) {
+      setError("Firebase Auth não está inicializado")
+      setLoading(false)
+      return
+    }
+
+    setFirebaseInitialized(true)
+    setError(null)
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed:", user?.uid || "No user")
       setUser(user)
 
       if (user) {
@@ -63,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setUserData(null)
+        // Limpar cookie de sessão quando não há usuário
+        document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       }
 
       setLoading(false)
@@ -85,8 +112,15 @@ const signUp = async (email: string, password: string, displayName?: string) => 
     return userCredential.user
   }
 
-const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
+      // Configurar persistência baseada na escolha do usuário
+      if (rememberMe) {
+        await setPersistence(auth, browserLocalPersistence)
+      } else {
+        await setPersistence(auth, browserSessionPersistence)
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
       if (userCredential?.user) {
@@ -102,17 +136,61 @@ const signIn = async (email: string, password: string) => {
     }
   }
 
-  const logout = () => {
-    return signOut(auth)
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      return result
+    } catch (error) {
+      console.error("Google sign in error:", error)
+      throw error
+    }
+  }
+
+  const signInWithGithub = async () => {
+    try {
+      const provider = new GithubAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      return result
+    } catch (error) {
+      console.error("GitHub sign in error:", error)
+      throw error
+    }
+  }
+
+  const checkAuthMethods = async (email: string) => {
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email)
+      return methods
+    } catch (error) {
+      console.error("Error checking auth methods:", error)
+      return []
+    }
+  }
+
+  const logout = async () => {
+    try {
+      // Limpar cookie de sessão
+      document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      await signOut(auth)
+    } catch (error) {
+      console.error("Logout error:", error)
+      throw error
+    }
   }
 
   const value = {
     user,
     userData,
     loading,
+    firebaseInitialized,
+    error,
     signUp,
     signIn,
+    signInWithGoogle,
+    signInWithGithub,
     logout,
+    checkAuthMethods,
   }
 
   return (
