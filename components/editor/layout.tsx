@@ -28,6 +28,7 @@ import CodeEditor from "./code-editor"
 import Preview from "./preview"
 import TerminalComponent from "./terminal"
 import AIAssistant from "./ai-assistant"
+import V0Chat from "@/components/v0-chat/v0-chat"
 import voiceCommandService from "@/lib/voice/voice-command-service"
 import { Badge } from "@/components/ui/badge"
 
@@ -328,7 +329,22 @@ export default function EditorLayout() {
 
           {/* Right Panel - AI Assistant (sempre visível) */}
           <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
-            <AIAssistant />
+            <Tabs defaultValue="v0-chat" className="h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="v0-chat" className="text-xs">
+                  v0 Chat
+                </TabsTrigger>
+                <TabsTrigger value="assistant" className="text-xs">
+                  Assistant
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="v0-chat" className="flex-1 mt-0">
+                <V0Chat />
+              </TabsContent>
+              <TabsContent value="assistant" className="flex-1 mt-0">
+                <AIAssistant />
+              </TabsContent>
+            </Tabs>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

@@ -13,8 +13,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "QuantumCode - Modern Web IDE",
   description:
-    "A modern web-based IDE with AI assistance",
-  generator: "v0.dev",
+    "A modern web-based IDE with AI assistance inspired by v0.dev",
+  generator: "QuantumCode",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
