@@ -1,54 +1,64 @@
-import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth, connectAuthEmulator } from "firebase/auth"
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"
-import { firebaseConfig, isConfigValid, useEmulators } from "./client-config"
 
-let app: any = null
-let auth: any = null
-let firestore: any = null
+import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
-// Inicializar Firebase apenas se a configuração for válida
-if (isConfigValid) {
-  try {
-    // Inicializar app apenas se ainda não foi inicializado
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+}
 
-    // Inicializar Auth
-    auth = getAuth(app)
+// Debug das variáveis de ambiente
+console.log('Environment variables check:', {
+  NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? 'SET' : 'MISSING',
+})
 
-    // Inicializar Firestore  
-    firestore = getFirestore(app)
+// Verificar se todas as variáveis necessárias estão definidas
+const requiredEnvVars = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID'
+]
 
-    // Conectar aos emuladores se necessário (apenas em desenvolvimento)
-    if (useEmulators && typeof window !== 'undefined') {
-      try {
-        connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true })
-        connectFirestoreEmulator(firestore, "localhost", 8080)
-        console.log("Firebase: Connected to emulators")
-      } catch (error) {
-        console.log("Firebase: Emulators already connected or not available")
-      }
-    }
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
 
-    console.log("Firebase: Initialized successfully")
-  } catch (error) {
-    console.error("Firebase: Failed to initialize:", error)
-  }
+if (missingVars.length > 0) {
+  console.error('Firebase: Missing required environment variables:', missingVars)
+  console.error('Please check your .env.local file and ensure all Firebase variables are set')
+  console.error('Current process.env keys:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_FIREBASE')))
 } else {
-  console.error("Firebase: Cannot initialize due to missing configuration")
+  console.log('Firebase: All environment variables are properly configured')
 }
 
-export { auth, app }
+// Inicializar Firebase
+let app
+let auth
+let db
+let storage
 
-export async function getFirebaseFirestore() {
-  if (!firestore) {
-    console.error("Firestore is not initialized")
-    return null
-  }
-  return firestore
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+  auth = getAuth(app)
+  db = getFirestore(app)
+  storage = getStorage(app)
+  console.log('Firebase: Initialized successfully')
+} catch (error) {
+  console.error('Firebase: Initialization failed:', error)
+  console.error('Firebase: Cannot initialize due to missing configuration')
 }
 
-// Função para verificar se o Firebase está pronto
-export function isFirebaseReady() {
-  return !!(app && auth && firestore && isConfigValid)
-}
+export { app, auth, db, storage }
