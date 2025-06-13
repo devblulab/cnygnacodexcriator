@@ -1,0 +1,828 @@
+
+Build Error
+Failed to compile
+
+Next.js (14.2.16) is outdated (learn more)
+./components/editor/preview.tsx
+Error: 
+  × the name `useEditor` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:1:1]
+   1 │ "use client"
+   2 │ 
+   3 │ import { useEffect, useRef, useState } from "react"
+   4 │ import { useEditor } from "@/context/editor-context"
+     ·          ────┬────
+     ·              ╰── previous definition of `useEditor` here
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+   6 │ import { Button } from "@/components/ui/button"
+   7 │ 
+   8 │ export function Preview() {
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+     ·          ────┬────
+     ·              ╰── `useEditor` redefined here
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+     ╰────
+
+  × the name `Button` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:3:1]
+   3 │ import { useEffect, useRef, useState } from "react"
+   4 │ import { useEditor } from "@/context/editor-context"
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+   6 │ import { Button } from "@/components/ui/button"
+     ·          ───┬──
+     ·             ╰── previous definition of `Button` here
+   7 │ 
+   8 │ export function Preview() {
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+     ·          ───┬──
+     ·             ╰── `Button` redefined here
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+ 126 │ import { useState, useEffect } from "react"
+     ╰────
+
+  × the name `RefreshCw` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:2:1]
+   2 │ 
+   3 │ import { useEffect, useRef, useState } from "react"
+   4 │ import { useEditor } from "@/context/editor-context"
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+     ·                   ────┬────
+     ·                       ╰── previous definition of `RefreshCw` here
+   6 │ import { Button } from "@/components/ui/button"
+   7 │ 
+   8 │ export function Preview() {
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+     ·          ────┬────
+     ·              ╰── `RefreshCw` redefined here
+ 126 │ import { useState, useEffect } from "react"
+ 127 │ 
+ 128 │ export default function Preview() {
+     ╰────
+
+  × the name `useState` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:1:1]
+   1 │ "use client"
+   2 │ 
+   3 │ import { useEffect, useRef, useState } from "react"
+     ·                             ────┬───
+     ·                                 ╰── previous definition of `useState` here
+   4 │ import { useEditor } from "@/context/editor-context"
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+   6 │ import { Button } from "@/components/ui/button"
+   7 │ 
+   8 │ export function Preview() {
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+ 126 │ import { useState, useEffect } from "react"
+     ·          ────┬───
+     ·              ╰── `useState` redefined here
+ 127 │ 
+ 128 │ export default function Preview() {
+ 129 │   const { currentFile, currentProject } = useEditor()
+     ╰────
+
+  × the name `useEffect` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:1:1]
+   1 │ "use client"
+   2 │ 
+   3 │ import { useEffect, useRef, useState } from "react"
+     ·          ────┬────
+     ·              ╰── previous definition of `useEffect` here
+   4 │ import { useEditor } from "@/context/editor-context"
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+   6 │ import { Button } from "@/components/ui/button"
+   7 │ 
+   8 │ export function Preview() {
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+ 126 │ import { useState, useEffect } from "react"
+     ·                    ────┬────
+     ·                        ╰── `useEffect` redefined here
+ 127 │ 
+ 128 │ export default function Preview() {
+ 129 │   const { currentFile, currentProject } = useEditor()
+     ╰────
+
+  × the name `Preview` is defined multiple times
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:5:1]
+   5 │ import { Loader2, RefreshCw } from "lucide-react"
+   6 │ import { Button } from "@/components/ui/button"
+   7 │ 
+   8 │ export function Preview() {
+     ·                 ───┬───
+     ·                    ╰── previous definition of `Preview` here
+   9 │   const { currentProject, currentFile } = useEditor()
+  10 │   const [loading, setLoading] = useState(true)
+  11 │   const [error, setError] = useState<string | null>(null)
+  12 │   const iframeRef = useRef<HTMLIFrameElement>(null)
+  13 │   const [key, setKey] = useState(Date.now())
+  14 │ 
+  15 │   useEffect(() => {
+  16 │     if (currentProject) {
+  17 │       setLoading(true)
+  18 │       setError(null)
+  19 │ 
+  20 │       // In a real implementation, we would compile the project and generate a preview
+  21 │       // For now, we'll just simulate loading
+  22 │       const timer = setTimeout(() => {
+  23 │         setLoading(false)
+  24 │       }, 1000)
+  25 │ 
+  26 │       return () => clearTimeout(timer)
+  27 │     }
+  28 │   }, [currentProject, key])
+  29 │ 
+  30 │   const refreshPreview = () => {
+  31 │     setKey(Date.now())
+  32 │   }
+  33 │ 
+  34 │   const generatePreviewContent = () => {
+  35 │     if (!currentProject) return ""
+  36 │ 
+  37 │     // In a real implementation, we would compile the project and generate HTML
+  38 │     // For now, we'll just create a simple HTML document with the current file content
+  39 │     const htmlFile = currentProject.files.find((f) => f.path.endsWith(".html"))
+  40 │     const cssFiles = currentProject.files.filter((f) => f.path.endsWith(".css"))
+  41 │     const jsFiles = currentProject.files.filter((f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"))
+  42 │ 
+  43 │     let html = htmlFile?.content || "<html><body><div id='root'></div></body></html>"
+  44 │     const css = cssFiles.map((f) => `<style>${f.content}</style>`).join("\n")
+  45 │     const js = jsFiles.map((f) => `<script>${f.content}</script>`).join("\n")
+  46 │ 
+  47 │     // If the current file is HTML, use it as the main content
+  48 │     if (currentFile && currentFile.path.endsWith(".html")) {
+  49 │       html = currentFile.content
+  50 │     }
+  51 │ 
+  52 │     return `
+  53 │       <!DOCTYPE html>
+  54 │       <html>
+  55 │         <head>
+  56 │           <meta charset="UTF-8">
+  57 │           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  58 │           ${css}
+  59 │         </head>
+  60 │         <body>
+  61 │           ${html}
+  62 │           ${js}
+  63 │         </body>
+  64 │       </html>
+  65 │     `
+  66 │   }
+  67 │ 
+  68 │   if (loading) {
+  69 │     return (
+  70 │       <div className="flex items-center justify-center h-full">
+  71 │         <Loader2 className="w-8 h-8 animate-spin" />
+  72 │       </div>
+  73 │     )
+  74 │   }
+  75 │ 
+  76 │   if (error) {
+  77 │     return (
+  78 │       <div className="flex flex-col items-center justify-center h-full text-destructive">
+  79 │         <p className="mb-4">Error loading preview</p>
+  80 │         <p className="text-sm mb-4">{error}</p>
+  81 │         <Button variant="outline" size="sm" onClick={refreshPreview}>
+  82 │           <RefreshCw className="w-4 h-4 mr-2" />
+  83 │           Retry
+  84 │         </Button>
+  85 │       </div>
+  86 │     )
+  87 │   }
+  88 │ 
+  89 │   if (!currentProject) {
+  90 │     return (
+  91 │       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+  92 │         <p className="mb-4">No project selected</p>
+  93 │         <p className="text-sm">Select a project to preview</p>
+  94 │       </div>
+  95 │     )
+  96 │   }
+  97 │ 
+  98 │   return (
+  99 │     <div className="flex flex-col h-full">
+ 100 │       <div className="flex items-center justify-between p-2 border-b">
+ 101 │         <div className="text-sm font-medium">Preview</div>
+ 102 │         <Button size="sm" variant="outline" onClick={refreshPreview}>
+ 103 │           <RefreshCw className="w-4 h-4 mr-2" />
+ 104 │           Refresh
+ 105 │         </Button>
+ 106 │       </div>
+ 107 │       <div className="flex-1 bg-white">
+ 108 │         <iframe
+ 109 │           key={key}
+ 110 │           ref={iframeRef}
+ 111 │           className="w-full h-full border-0"
+ 112 │           srcDoc={generatePreviewContent()}
+ 113 │           sandbox="allow-scripts allow-same-origin"
+ 114 │           title="Preview"
+ 115 │         />
+ 116 │       </div>
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+ 124 │ import { Button } from "@/components/ui/button"
+ 125 │ import { RefreshCw, ExternalLink } from "lucide-react"
+ 126 │ import { useState, useEffect } from "react"
+ 127 │ 
+ 128 │ export default function Preview() {
+     ·                         ───┬───
+     ·                            ╰── `Preview` redefined here
+ 129 │   const { currentFile, currentProject } = useEditor()
+ 130 │   const [previewContent, setPreviewContent] = useState("")
+ 131 │   const [key, setKey] = useState(0)
+     ╰────
+
+  × The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+     ╭─[/home/runner/workspace/components/editor/preview.tsx:117:1]
+ 117 │     </div>
+ 118 │   )
+ 119 │ }
+ 120 │ "use client"
+     · ────────────
+ 121 │ 
+ 122 │ import { useEditor } from "@/context/editor-context"
+ 123 │ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+     ╰────
+This error occurred during the build process and can only be dismissed by fixing the error.
