@@ -42,6 +42,11 @@ export default function HomePage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeView, setActiveView] = useState<"design" | "code">("design")
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   const projects: Project[] = [
     {
@@ -72,6 +77,11 @@ export default function HomePage() {
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     project.description.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const formatDate = (dateString: string) => {
+    if (!mounted) return dateString
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
 
   return (
     <AuthProvider>
@@ -156,7 +166,7 @@ export default function HomePage() {
                                     </p>
                                     <div className="flex items-center mt-2 text-xs text-muted-foreground">
                                       <Clock className="h-3 w-3 mr-1" />
-                                      {new Date(project.createdAt).toLocaleDateString()}
+                                      {formatDate(project.createdAt)}
                                     </div>
                                   </div>
                                 </div>
