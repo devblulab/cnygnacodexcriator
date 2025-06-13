@@ -6,14 +6,12 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { EditorProvider } from "@/context/editor-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "QuantumCode - Modern Web IDE",
-  description:
-    "A modern web-based IDE with AI assistance inspired by v0.dev",
+  description: "A modern web-based IDE with AI assistance inspired by v0.dev",
   generator: "QuantumCode",
 };
 
@@ -22,10 +20,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <EditorProvider>
-            {children}
-            <Toaster />
-          </EditorProvider>
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

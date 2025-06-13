@@ -2,314 +2,306 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  Sparkles, 
+  Search, 
+  Plus, 
   Code, 
-  Mic, 
-  MicOff, 
-  Brain, 
-  Atom, 
-  Users, 
+  Eye, 
+  FileText, 
+  Settings,
+  Sparkles,
   Zap,
-  ArrowRight,
-  Play,
-  Eye
+  Clock,
+  Users,
+  Send,
+  User,
+  Bot
 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import geminiService from "@/lib/ai/gemini-service"
-import voiceCommandService from "@/lib/voice/voice-command-service"
+import { Card, CardContent } from "@/components/ui/card"
+import { AuthProvider } from "@/lib/firebase/auth-context"
+import { EditorProvider } from "@/context/editor-context"
+import { CodeEditor } from "@/components/editor/code-editor"
+import Preview from "@/components/editor/preview"
+import V0Chat from "@/components/v0-chat/v0-chat"
 
-const examplePrompts = [
-  "Crie uma landing page moderna com formulário de contato",
-  "Gere um dashboard com gráficos e métricas",
-  "Desenvolva um blog responsivo com dark mode",
-  "Construa um e-commerce com carrinho de compras",
-  "Faça uma página de login com autenticação social",
-  "Crie um algoritmo quântico de busca"
-]
-
-const features = [
-  {
-    icon: <Sparkles className="h-6 w-6" />,
-    title: "IA Generativa",
-    description: "Gere interfaces completas com Gemini AI"
-  },
-  {
-    icon: <Mic className="h-6 w-6" />,
-    title: "Comandos de Voz",
-    description: "Desenvolva falando naturalmente"
-  },
-  {
-    icon: <Users className="h-6 w-6" />,
-    title: "Colaboração Real",
-    description: "Edite em tempo real com sua equipe"
-  },
-  {
-    icon: <Brain className="h-6 w-6" />,
-    title: "Neurofeedback",
-    description: "Otimize sua produtividade"
-  },
-  {
-    icon: <Atom className="h-6 w-6" />,
-    title: "Computação Quântica",
-    description: "Suporte a algoritmos quânticos"
-  },
-  {
-    icon: <Zap className="h-6 w-6" />,
-    title: "Deploy Instantâneo",
-    description: "Publique com um clique"
-  }
-]
+interface Project {
+  id: string
+  name: string
+  description: string
+  createdAt: string
+  tags: string[]
+}
 
 export default function HomePage() {
-  const [prompt, setPrompt] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [generatedContent, setGeneratedContent] = useState<any>(null)
-  const router = useRouter()
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    // Auto-focus no input
-    inputRef.current?.focus()
-
-    // Configurar listener para comandos de voz
-    const handleVoiceCommand = (command: any) => {
-      setPrompt(command.command)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeView, setActiveView] = useState<"design" | "code">("design")
+  
+  const projects: Project[] = [
+    {
+      id: "1",
+      name: "Ecommerce completo",
+      description: "Sistema completo de e-commerce com carrinho e pagamento",
+      createdAt: "2024-01-15",
+      tags: ["React", "Next.js", "Stripe"]
+    },
+    {
+      id: "2", 
+      name: "Dashboard design",
+      description: "Dashboard administrativo moderno e responsivo",
+      createdAt: "2024-01-10",
+      tags: ["React", "Tailwind", "Charts"]
+    },
+    {
+      id: "3",
+      name: "Landing page",
+      description: "Landing page para startup de tecnologia",
+      createdAt: "2024-01-05",
+      tags: ["HTML", "CSS", "JavaScript"]
     }
+  ]
 
-    voiceCommandService.onVoiceCommand(handleVoiceCommand)
-
-    return () => {
-      voiceCommandService.removeVoiceCommand(handleVoiceCommand)
-    }
-  }, [])
-
-  const handleGenerate = async () => {
-    if (!prompt.trim() || isLoading) return
-
-    setIsLoading(true)
-    
-    try {
-      const result = await geminiService.generateInterface(prompt)
-      setGeneratedContent(result)
-    } catch (error) {
-      console.error('Erro ao gerar conteúdo:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const toggleVoiceRecognition = async () => {
-    try {
-      if (isListening) {
-        voiceCommandService.stopListening()
-        setIsListening(false)
-      } else {
-        await voiceCommandService.startListening()
-        setIsListening(true)
-      }
-    } catch (error) {
-      console.error('Erro no reconhecimento de voz:', error)
-    }
-  }
-
-  const handleExampleClick = (examplePrompt: string) => {
-    setPrompt(examplePrompt)
-    inputRef.current?.focus()
-  }
-
-  const goToEditor = () => {
-    router.push('/editor')
-  }
+  const recentProjects = projects.slice(0, 3)
+  const filteredProjects = projects.filter(project => 
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Code className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold">QuantumCode</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="gap-1">
-              <Brain className="h-3 w-3" />
-              Neurofeedback
-            </Badge>
-            <Badge variant="outline" className="gap-1">
-              <Atom className="h-3 w-3" />
-              Quantum Ready
-            </Badge>
-            <Button onClick={goToEditor}>
-              Abrir Editor
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="text-center max-w-4xl mx-auto mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent mb-6">
-            Desenvolva com IA, Voz e Consciência
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            A primeira IDE colaborativa com IA generativa, comandos de voz, neurofeedback e suporte à computação quântica.
-            Transforme ideias em código instantaneamente.
-          </p>
-        </div>
-
-        {/* Main Prompt Input */}
-        <div className="max-w-3xl mx-auto mb-12">
-          <Card className="p-6 shadow-xl border-2">
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <Input
-                  ref={inputRef}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Descreva a interface que você quer criar... (ex: 'Crie uma landing page para um app de delivery')"
-                  className="text-lg h-12"
-                  onKeyPress={(e) => e.key === 'Enter' && handleGenerate()}
-                />
-              </div>
-              <Button
-                onClick={toggleVoiceRecognition}
-                variant={isListening ? "destructive" : "outline"}
-                size="lg"
-                className="px-4"
-              >
-                {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-              </Button>
-              <Button onClick={handleGenerate} disabled={isLoading || !prompt.trim()} size="lg" className="px-8">
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Gerar
-                  </>
-                )}
-              </Button>
-            </div>
-            
-            {isListening && (
-              <div className="text-center text-sm text-muted-foreground">
-                <Mic className="h-4 w-4 inline mr-2 animate-pulse" />
-                Escutando... Fale sua ideia
-              </div>
-            )}
-          </Card>
-
-          {/* Example Prompts */}
-          <div className="mt-6">
-            <p className="text-sm text-muted-foreground mb-3">Experimente estes exemplos:</p>
-            <div className="flex flex-wrap gap-2">
-              {examplePrompts.map((example, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExampleClick(example)}
-                  className="text-left h-auto py-2 px-3"
-                >
-                  {example}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Generated Content Preview */}
-        {generatedContent && (
-          <div className="max-w-6xl mx-auto mb-12">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Resultado Gerado</h3>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                  <Button size="sm" onClick={goToEditor}>
-                    <Code className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-2">Código Gerado:</h4>
-                  <pre className="bg-muted p-4 rounded-lg text-sm overflow-auto max-h-60">
-                    <code>{generatedContent.code}</code>
-                  </pre>
+    <AuthProvider>
+      <EditorProvider>
+        <div className="h-screen flex flex-col bg-background">
+          {/* Top Navigation */}
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-16 items-center px-6">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Code className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-xl font-bold">QuantumCode</span>
                 </div>
                 
-                <div>
-                  <h4 className="font-medium mb-2">Preview:</h4>
-                  <div 
-                    className="border rounded-lg p-4 bg-white min-h-60"
-                    dangerouslySetInnerHTML={{ __html: generatedContent.preview }}
-                  />
+                <nav className="flex items-center space-x-6 text-sm font-medium">
+                  <Button variant="ghost" size="sm">Search</Button>
+                  <Button variant="ghost" size="sm">Projects</Button>
+                  <Button variant="ghost" size="sm">Recents</Button>
+                  <Button variant="ghost" size="sm">Community</Button>
+                </nav>
+              </div>
+
+              <div className="ml-auto flex items-center space-x-4">
+                <Badge variant="outline" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  The v0 API is now in beta
+                </Badge>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  New
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <User className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <div className="flex-1 flex">
+            <ResizablePanelGroup direction="horizontal">
+              {/* Left Sidebar - Projects */}
+              <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+                <div className="flex flex-col h-full border-r">
+                  {/* Search */}
+                  <div className="p-4 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search projects..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <ScrollArea className="flex-1">
+                    <div className="p-4 space-y-6">
+                      {/* Recent Projects */}
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Projects</h3>
+                        <div className="space-y-2">
+                          {recentProjects.map((project) => (
+                            <Card 
+                              key={project.id} 
+                              className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                                selectedProject?.id === project.id ? 'bg-muted border-primary' : ''
+                              }`}
+                              onClick={() => setSelectedProject(project)}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center flex-shrink-0">
+                                    <Code className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium truncate">{project.name}</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                      {project.description}
+                                    </p>
+                                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      {new Date(project.createdAt).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* All Projects */}
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3">All Projects</h3>
+                        <div className="space-y-2">
+                          {filteredProjects.map((project) => (
+                            <Card 
+                              key={project.id}
+                              className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                                selectedProject?.id === project.id ? 'bg-muted border-primary' : ''
+                              }`}
+                              onClick={() => setSelectedProject(project)}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                    <FileText className="h-3 w-3" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium truncate">{project.name}</h4>
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                      {project.description}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {project.tags.slice(0, 2).map((tag) => (
+                                        <Badge key={tag} variant="secondary" className="text-xs px-1 py-0">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollArea>
                 </div>
-              </div>
-              
-              <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">Explicação:</h4>
-                <p className="text-sm">{generatedContent.explanation}</p>
-              </div>
-            </Card>
+              </ResizablePanel>
+
+              <ResizableHandle />
+
+              {/* Main Content Area */}
+              <ResizablePanel defaultSize={55}>
+                <div className="flex flex-col h-full">
+                  {!selectedProject ? (
+                    /* Welcome Screen */
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                        <Sparkles className="h-8 w-8 text-white" />
+                      </div>
+                      <h1 className="text-3xl font-bold mb-4">What can I help you build?</h1>
+                      <p className="text-muted-foreground mb-8 max-w-md">
+                        Descreva o que você quer criar e eu vou gerar o código para você. 
+                        Selecione um projeto existente ou comece um novo.
+                      </p>
+                      <div className="flex gap-4">
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Novo Projeto
+                        </Button>
+                        <Button variant="outline">
+                          Ver Exemplos
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Project View */
+                    <div className="flex flex-col h-full">
+                      {/* Project Header */}
+                      <div className="border-b p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h2 className="text-lg font-semibold">{selectedProject.name}</h2>
+                            <p className="text-sm text-muted-foreground">{selectedProject.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "design" | "code")}>
+                              <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="design" className="gap-2">
+                                  <Eye className="h-4 w-4" />
+                                  Design
+                                </TabsTrigger>
+                                <TabsTrigger value="code" className="gap-2">
+                                  <Code className="h-4 w-4" />
+                                  Code
+                                </TabsTrigger>
+                              </TabsList>
+                            </Tabs>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content Area */}
+                      <div className="flex-1">
+                        <Tabs value={activeView} className="h-full">
+                          <TabsContent value="design" className="h-full m-0">
+                            <Preview />
+                          </TabsContent>
+                          <TabsContent value="code" className="h-full m-0">
+                            <CodeEditor />
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle />
+
+              {/* Right Panel - AI Chat */}
+              <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                <V0Chat />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
-        )}
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <div className="text-primary mb-4">{feature.icon}</div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Bottom Status Bar */}
+          <div className="border-t bg-muted/50 px-6 py-2 flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
+              <Badge variant="outline" className="gap-1">
+                <Zap className="h-3 w-3" />
+                Quantum Ready
+              </Badge>
+              <span className="text-muted-foreground">
+                You are out of credits. Your limit will reset on June 16.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline">Upgrade Plan</Button>
+            </div>
+          </div>
         </div>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <Card className="p-8 max-w-2xl mx-auto bg-gradient-to-r from-primary/10 to-purple-600/10">
-            <CardContent className="p-0">
-              <h2 className="text-2xl font-bold mb-4">Pronto para Revolucionar seu Desenvolvimento?</h2>
-              <p className="text-muted-foreground mb-6">
-                Acesso 100% gratuito. Sem cadastro. Comece a criar agora mesmo.
-              </p>
-              <Button size="lg" onClick={goToEditor} className="px-8">
-                <Play className="h-5 w-5 mr-2" />
-                Começar Agora
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t mt-20">
-        <div className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
-          <p>QuantumCode - IDE Colaborativa com IA | Desenvolvido com ❤️ e Tecnologia Quântica</p>
-        </div>
-      </footer>
-    </div>
+      </EditorProvider>
+    </AuthProvider>
   )
 }
