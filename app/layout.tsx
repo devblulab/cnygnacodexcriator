@@ -8,10 +8,10 @@ import { AuthProvider } from "@/lib/firebase/auth-context";
 import { Toaster } from "@/components/ui/toaster";
 import { EditorProvider } from "@/context/editor-context";
 
-// Fonte Google: Inter
-const fontSans = Inter({
+// Fonte Google: Inter (corrigido)
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={fontSans.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthProvider>

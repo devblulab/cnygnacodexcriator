@@ -1,0 +1,32 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras para a coleção de usuários
+    match /users/{userId} {
+      // Usuários podem ler e atualizar apenas seus próprios dados
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Apenas admins podem criar novos usuários
+      allow create: if request.auth != null;
+      
+      // Apenas admins podem deletar usuários
+      allow delete: if request.auth != null && 
+        resource.data.role == 'admin';
+    }
+    
+    // Regras para projetos do usuário
+    match /projects/{projectId} {
+      // Usuários podem acessar apenas seus próprios projetos
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Permitir criação de novos projetos
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Outras coleções podem ser adicionadas aqui
+  }
+}
