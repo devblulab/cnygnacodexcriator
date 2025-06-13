@@ -240,3 +240,143 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+"use client"
+
+import React, { createContext, useContext, useEffect, useState } from "react"
+import { 
+  User,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  GithubAuthProvider
+} from "firebase/auth"
+import { auth, db } from "./config"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+
+interface AuthContextType {
+  user: User | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInWithGithub: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!auth) {
+      setLoading(false)
+      return
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && db) {
+        // Salvar dados do usuário no Firestore
+        const userRef = doc(db, "users", user.uid)
+        const userSnap = await getDoc(userRef)
+        
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            createdAt: new Date(),
+            lastLogin: new Date()
+          })
+        } else {
+          // Atualizar último login
+          await setDoc(userRef, {
+            lastLogin: new Date()
+          }, { merge: true })
+        }
+      }
+      
+      setUser(user)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  const signIn = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase not initialized")
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+    } catch (error) {
+      console.error("Sign in error:", error)
+      throw error
+    }
+  }
+
+  const signUp = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase not initialized")
+    try {
+      await createUserWithEmailAndPassword(auth, email, password)
+    } catch (error) {
+      console.error("Sign up error:", error)
+      throw error
+    }
+  }
+
+  const signOut = async () => {
+    if (!auth) throw new Error("Firebase not initialized")
+    try {
+      await firebaseSignOut(auth)
+    } catch (error) {
+      console.error("Sign out error:", error)
+      throw error
+    }
+  }
+
+  const signInWithGoogle = async () => {
+    if (!auth) throw new Error("Firebase not initialized")
+    try {
+      const provider = new GoogleAuthProvider()
+      await signInWithPopup(auth, provider)
+    } catch (error) {
+      console.error("Google sign in error:", error)
+      throw error
+    }
+  }
+
+  const signInWithGithub = async () => {
+    if (!auth) throw new Error("Firebase not initialized")
+    try {
+      const provider = new GithubAuthProvider()
+      await signInWithPopup(auth, provider)
+    } catch (error) {
+      console.error("GitHub sign in error:", error)
+      throw error
+    }
+  }
+
+  const value = {
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    signInWithGoogle,
+    signInWithGithub
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}
