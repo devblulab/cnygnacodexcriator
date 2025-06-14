@@ -1,0 +1,737 @@
+
+Build Error
+Failed to compile
+
+Next.js (14.2.16) is outdated (learn more)
+./lib/firebase/config.ts
+Error: 
+  × cannot reassign to a variable declared with `const`
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:14:1]
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+    ·       ─┬─
+    ·        ╰── const variable was declared here
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+    ·   ─┬─
+    ·    ╰── cannot reassign
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+    ╰────
+
+  × cannot reassign to a variable declared with `const`
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:14:1]
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+    ·       ─┬─
+    ·        ╰── const variable was declared here
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+    ·   ─┬─
+    ·    ╰── cannot reassign
+ 75 │ }
+ 76 │ 
+ 77 │ // Initialize Firebase services
+    ╰────
+
+  × the name `initializeApp` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:1:1]
+  1 │ import { initializeApp } from "firebase/app";
+    ·          ──────┬──────
+    ·                ╰── previous definition of `initializeApp` here
+  2 │ import { getAuth, connectAuthEmulator } from "firebase/auth";
+  3 │ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+  4 │ import { getStorage, connectStorageEmulator } from "firebase/storage";
+  5 │ 
+  6 │ const firebaseConfig = {
+  7 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  8 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  9 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 10 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 11 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 12 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 13 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+    ·          ──────┬──────
+    ·                ╰── `initializeApp` redefined here
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+    ╰────
+
+  × the name `getAuth` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:1:1]
+  1 │ import { initializeApp } from "firebase/app";
+  2 │ import { getAuth, connectAuthEmulator } from "firebase/auth";
+    ·          ───┬───
+    ·             ╰── previous definition of `getAuth` here
+  3 │ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+  4 │ import { getStorage, connectStorageEmulator } from "firebase/storage";
+  5 │ 
+  6 │ const firebaseConfig = {
+  7 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  8 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  9 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 10 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 11 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 12 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 13 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+    ·          ───┬───
+    ·             ╰── `getAuth` redefined here
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+    ╰────
+
+  × the name `getFirestore` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:1:1]
+  1 │ import { initializeApp } from "firebase/app";
+  2 │ import { getAuth, connectAuthEmulator } from "firebase/auth";
+  3 │ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+    ·          ──────┬─────
+    ·                ╰── previous definition of `getFirestore` here
+  4 │ import { getStorage, connectStorageEmulator } from "firebase/storage";
+  5 │ 
+  6 │ const firebaseConfig = {
+  7 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  8 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  9 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 10 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 11 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 12 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 13 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+    ·          ──────┬─────
+    ·                ╰── `getFirestore` redefined here
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+    ╰────
+
+  × the name `getStorage` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:1:1]
+  1 │ import { initializeApp } from "firebase/app";
+  2 │ import { getAuth, connectAuthEmulator } from "firebase/auth";
+  3 │ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+  4 │ import { getStorage, connectStorageEmulator } from "firebase/storage";
+    ·          ─────┬────
+    ·               ╰── previous definition of `getStorage` here
+  5 │ 
+  6 │ const firebaseConfig = {
+  7 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  8 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  9 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 10 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 11 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 12 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 13 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+    ·          ─────┬────
+    ·               ╰── `getStorage` redefined here
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    ╰────
+
+  × the name `firebaseConfig` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:3:1]
+  3 │ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+  4 │ import { getStorage, connectStorageEmulator } from "firebase/storage";
+  5 │ 
+  6 │ const firebaseConfig = {
+    ·       ───────┬──────
+    ·              ╰── previous definition of `firebaseConfig` here
+  7 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  8 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  9 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 10 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 11 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 12 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 13 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+    ·       ───────┬──────
+    ·              ╰── `firebaseConfig` redefined here
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    ╰────
+
+  × the name `app` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:14:1]
+ 14 │ };
+ 15 │ 
+ 16 │ // Initialize Firebase
+ 17 │ const app = initializeApp(firebaseConfig);
+    ·       ─┬─
+    ·        ╰── previous definition of `app` here
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+    ·     ─┬─
+    ·      ╰── `app` redefined here
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+    ╰────
+
+  × the name `auth` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:17:1]
+ 17 │ const app = initializeApp(firebaseConfig);
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+    ·              ──┬─
+    ·                ╰── previous definition of `auth` here
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+ 75 │ }
+ 76 │ 
+ 77 │ // Initialize Firebase services
+ 78 │ export const auth = app ? getAuth(app) : null
+    ·              ──┬─
+    ·                ╰── `auth` redefined here
+ 79 │ export const db = app ? getFirestore(app) : null
+ 80 │ export const storage = app ? getStorage(app) : null
+    ╰────
+
+  × the name `db` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:18:1]
+ 18 │ 
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+    ·              ─┬
+    ·               ╰── previous definition of `db` here
+ 22 │ export const storage = getStorage(app);
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+ 75 │ }
+ 76 │ 
+ 77 │ // Initialize Firebase services
+ 78 │ export const auth = app ? getAuth(app) : null
+ 79 │ export const db = app ? getFirestore(app) : null
+    ·              ─┬
+    ·               ╰── `db` redefined here
+ 80 │ export const storage = app ? getStorage(app) : null
+ 81 │ 
+ 82 │ export default app
+    ╰────
+
+  × the name `storage` is defined multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:19:1]
+ 19 │ // Initialize Firebase services
+ 20 │ export const auth = getAuth(app);
+ 21 │ export const db = getFirestore(app);
+ 22 │ export const storage = getStorage(app);
+    ·              ───┬───
+    ·                 ╰── previous definition of `storage` here
+ 23 │ 
+ 24 │ // Connect to emulators in development
+ 25 │ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
+ 26 │   try {
+ 27 │     connectAuthEmulator(auth, "http://localhost:9099");
+ 28 │     connectFirestoreEmulator(db, "localhost", 8080);
+ 29 │     connectStorageEmulator(storage, "localhost", 9199);
+ 30 │   } catch (error) {
+ 31 │     console.log("Firebase emulators already connected");
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+ 75 │ }
+ 76 │ 
+ 77 │ // Initialize Firebase services
+ 78 │ export const auth = app ? getAuth(app) : null
+ 79 │ export const db = app ? getFirestore(app) : null
+ 80 │ export const storage = app ? getStorage(app) : null
+    ·              ───┬───
+    ·                 ╰── `storage` redefined here
+ 81 │ 
+ 82 │ export default app
+    ╰────
+
+  × the name `default` is exported multiple times
+    ╭─[/home/runner/workspace/lib/firebase/config.ts:32:1]
+ 32 │   }
+ 33 │ }
+ 34 │ 
+ 35 │ export default app;
+    · ─────────┬─────────
+    ·          ╰── previous exported here
+ 36 │ import { initializeApp, getApps, getApp } from "firebase/app"
+ 37 │ import { getAuth } from "firebase/auth"
+ 38 │ import { getFirestore } from "firebase/firestore"
+ 39 │ import { getStorage } from "firebase/storage"
+ 40 │ 
+ 41 │ const firebaseConfig = {
+ 42 │   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+ 43 │   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+ 44 │   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+ 45 │   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+ 46 │   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+ 47 │   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+ 48 │   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+ 49 │ }
+ 50 │ 
+ 51 │ // Check if all required config values are present
+ 52 │ const requiredEnvVars = [
+ 53 │   'NEXT_PUBLIC_FIREBASE_API_KEY',
+ 54 │   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+ 55 │   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+ 56 │   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+ 57 │   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+ 58 │   'NEXT_PUBLIC_FIREBASE_APP_ID'
+ 59 │ ]
+ 60 │ 
+ 61 │ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+ 62 │ 
+ 63 │ if (missingEnvVars.length > 0) {
+ 64 │   console.error('Firebase: Missing required environment variables:', missingEnvVars)
+ 65 │   console.error('Please check your .env.local file and ensure all Firebase variables are set')
+ 66 │ }
+ 67 │ 
+ 68 │ // Initialize Firebase
+ 69 │ let app
+ 70 │ try {
+ 71 │   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+ 72 │ } catch (error) {
+ 73 │   console.error('Firebase: Cannot initialize due to missing configuration')
+ 74 │   app = null
+ 75 │ }
+ 76 │ 
+ 77 │ // Initialize Firebase services
+ 78 │ export const auth = app ? getAuth(app) : null
+ 79 │ export const db = app ? getFirestore(app) : null
+ 80 │ export const storage = app ? getStorage(app) : null
+ 81 │ 
+ 82 │ export default app
+    · ─────────┬────────
+    ·          ╰── exported more than once
+    ╰────
+
+Error: 
+  ☞ Exported identifiers must be unique
+This error occurred during the build process and can only be dismissed by fixing the error.
