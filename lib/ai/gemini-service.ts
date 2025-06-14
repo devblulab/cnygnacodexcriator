@@ -415,3 +415,74 @@ Responda de forma útil e amigável em português brasileiro. Se for uma pergunt
 
 export const geminiService = new GeminiService()
 export default geminiService
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+if (!API_KEY) {
+  console.warn("Gemini API key not found. Please set NEXT_PUBLIC_GEMINI_API_KEY in your environment variables.");
+}
+
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+
+class GeminiService {
+  private model: any;
+
+  constructor() {
+    if (genAI) {
+      this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    }
+  }
+
+  async generateResponse(prompt: string): Promise<string> {
+    if (!this.model) {
+      throw new Error("Gemini AI is not configured. Please check your API key.");
+    }
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error("Error generating response from Gemini:", error);
+      throw new Error("Failed to generate response from Gemini AI");
+    }
+  }
+
+  async generateCode(description: string, framework: string = "react"): Promise<string> {
+    const prompt = `Create a ${framework} component based on this description: ${description}. 
+    Please provide only the component code with modern styling using Tailwind CSS. 
+    Make it responsive and accessible. Include proper TypeScript types if applicable.
+    
+    Description: ${description}`;
+
+    return this.generateResponse(prompt);
+  }
+
+  async improveCode(code: string, instructions: string): Promise<string> {
+    const prompt = `Improve this code based on the following instructions: ${instructions}
+    
+    Current code:
+    ${code}
+    
+    Please provide the improved version with explanations for the changes made.`;
+
+    return this.generateResponse(prompt);
+  }
+
+  async explainCode(code: string): Promise<string> {
+    const prompt = `Explain this code in detail, including:
+    - What it does
+    - How it works
+    - Key features and patterns used
+    - Potential improvements
+    
+    Code:
+    ${code}`;
+
+    return this.generateResponse(prompt);
+  }
+}
+
+const geminiService = new GeminiService();
+export default geminiService;
