@@ -1,279 +1,232 @@
-"use client";
+"use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect } from "react"
+import { useAuth } from "@/lib/firebase/auth-context"
+import { db } from "@/lib/firebase/config"
+import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore"
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  files: ProjectFile[];
-  createdAt: Date;
-  updatedAt: Date;
+export type FileType = {
+  id: string
+  name: string
+  path: string
+  content: string
+  language: string
+  createdAt?: string
+  updatedAt?: string
 }
 
-interface ProjectFile {
-  id: string;
-  name: string;
-  content: string;
-  language: string;
-  path: string;
+export type ProjectType = {
+  id: string
+  name: string
+  description: string
+  files: FileType[]
+  createdAt: string
+  updatedAt: string
+  userId: string
 }
 
 interface EditorContextType {
-  // Projects
-  projects: Project[];
-  currentProject: Project | null;
-  setCurrentProject: (project: Project | null) => void;
-  createProject: (name: string, description: string) => Promise<Project>;
-  updateProject: (projectId: string, updates: Partial<Project>) => Promise<void>;
-  deleteProject: (projectId: string) => Promise<void>;
-
-  // Files
-  currentFile: ProjectFile | null;
-  setCurrentFile: (file: ProjectFile | null) => void;
-  createFile: (projectId: string, name: string, content: string, language: string) => Promise<ProjectFile>;
-  updateFile: (fileId: string, updates: Partial<ProjectFile>) => Promise<void>;
-  deleteFile: (fileId: string) => Promise<void>;
-
-  // Editor state
-  isLoading: boolean;
-  error: string | null;
-  setError: (error: string | null) => void;
+  currentProject: ProjectType | null
+  projects: ProjectType[]
+  activeFile: FileType | null
+  loading: boolean
+  createProject: (name: string, description: string) => Promise<void>
+  loadProject: (projectId: string) => Promise<void>
+  saveProject: () => Promise<void>
+  deleteProject: (projectId: string) => Promise<void>
+  createFile: (name: string, content: string, language: string) => void
+  updateFile: (fileId: string, content: string) => void
+  deleteFile: (fileId: string) => void
+  setActiveFile: (file: FileType | null) => void
+  refreshProjects: () => Promise<void>
 }
 
-const EditorContext = createContext<EditorContextType | undefined>(undefined);
+const EditorContext = React.createContext<EditorContextType | undefined>(undefined)
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [currentFile, setCurrentFile] = useState<ProjectFile | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth()
+  const [currentProject, setCurrentProject] = useState<ProjectType | null>(null)
+  const [projects, setProjects] = useState<ProjectType[]>([])
+  const [activeFile, setActiveFile] = useState<FileType | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  // Load projects from localStorage on mount
+  const refreshProjects = async () => {
+    if (!user) return
+
+    setLoading(true)
+    try {
+      const projectsRef = collection(db, "projects")
+      const q = query(projectsRef, where("userId", "==", user.uid))
+      const snapshot = await getDocs(q)
+
+      const userProjects = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as ProjectType))
+
+      setProjects(userProjects)
+    } catch (error) {
+      console.error("Error fetching projects:", error)
+    }
+    setLoading(false)
+  }
+
   useEffect(() => {
-    const savedProjects = localStorage.getItem("editor-projects");
-    if (savedProjects) {
-      try {
-        const parsedProjects = JSON.parse(savedProjects).map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-          updatedAt: new Date(p.updatedAt),
-        }));
-        setProjects(parsedProjects);
-      } catch (error) {
-        console.error("Error loading projects:", error);
-      }
+    if (user) {
+      refreshProjects()
+    } else {
+      setProjects([])
+      setCurrentProject(null)
+      setActiveFile(null)
     }
-  }, []);
+  }, [user])
 
-  // Save projects to localStorage whenever projects change
-  useEffect(() => {
-    localStorage.setItem("editor-projects", JSON.stringify(projects));
-  }, [projects]);
+  const createProject = async (name: string, description: string) => {
+    if (!user) return
 
-  const createProject = async (name: string, description: string): Promise<Project> => {
-    setIsLoading(true);
-    setError(null);
+    const newProject: Omit<ProjectType, "id"> = {
+      name,
+      description,
+      files: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: user.uid
+    }
 
     try {
-      const newProject: Project = {
-        id: Date.now().toString(),
-        name,
-        description,
-        files: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      setProjects(prev => [...prev, newProject]);
-      setCurrentProject(newProject);
-
-      return newProject;
+      const docRef = await addDoc(collection(db, "projects"), newProject)
+      const project = { id: docRef.id, ...newProject }
+      setProjects(prev => [...prev, project])
+      setCurrentProject(project)
     } catch (error) {
-      const errorMessage = "Failed to create project";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.error("Error creating project:", error)
     }
-  };
+  }
 
-  const updateProject = async (projectId: string, updates: Partial<Project>): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+  const loadProject = async (projectId: string) => {
+    const project = projects.find(p => p.id === projectId)
+    if (project) {
+      setCurrentProject(project)
+      setActiveFile(project.files[0] || null)
+    }
+  }
+
+  const saveProject = async () => {
+    if (!currentProject) return
 
     try {
-      setProjects(prev => prev.map(p => 
-        p.id === projectId 
-          ? { ...p, ...updates, updatedAt: new Date() }
-          : p
-      ));
+      const projectRef = doc(db, "projects", currentProject.id)
+      await updateDoc(projectRef, {
+        ...currentProject,
+        updatedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error("Error saving project:", error)
+    }
+  }
 
+  const deleteProject = async (projectId: string) => {
+    try {
+      await deleteDoc(doc(db, "projects", projectId))
+      setProjects(prev => prev.filter(p => p.id !== projectId))
       if (currentProject?.id === projectId) {
-        setCurrentProject(prev => prev ? { ...prev, ...updates, updatedAt: new Date() } : null);
+        setCurrentProject(null)
+        setActiveFile(null)
       }
     } catch (error) {
-      const errorMessage = "Failed to update project";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.error("Error deleting project:", error)
     }
-  };
+  }
 
-  const deleteProject = async (projectId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+  const createFile = (name: string, content: string, language: string) => {
+    if (!currentProject) return
 
-    try {
-      setProjects(prev => prev.filter(p => p.id !== projectId));
-
-      if (currentProject?.id === projectId) {
-        setCurrentProject(null);
-        setCurrentFile(null);
-      }
-    } catch (error) {
-      const errorMessage = "Failed to delete project";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+    const newFile: FileType = {
+      id: Date.now().toString(),
+      name,
+      path: `/${name}`,
+      content,
+      language,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
-  };
 
-  const createFile = async (
-    projectId: string, 
-    name: string, 
-    content: string, 
-    language: string
-  ): Promise<ProjectFile> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const newFile: ProjectFile = {
-        id: Date.now().toString(),
-        name,
-        content,
-        language,
-        path: name,
-      };
-
-      setProjects(prev => prev.map(p => 
-        p.id === projectId 
-          ? { ...p, files: [...p.files, newFile], updatedAt: new Date() }
-          : p
-      ));
-
-      if (currentProject?.id === projectId) {
-        setCurrentProject(prev => prev ? {
-          ...prev,
-          files: [...prev.files, newFile],
-          updatedAt: new Date()
-        } : null);
-      }
-
-      return newFile;
-    } catch (error) {
-      const errorMessage = "Failed to create file";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+    const updatedProject = {
+      ...currentProject,
+      files: [...currentProject.files, newFile],
+      updatedAt: new Date().toISOString()
     }
-  };
 
-  const updateFile = async (fileId: string, updates: Partial<ProjectFile>): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+    setCurrentProject(updatedProject)
+    setActiveFile(newFile)
+  }
 
-    try {
-      setProjects(prev => prev.map(p => ({
-        ...p,
-        files: p.files.map(f => f.id === fileId ? { ...f, ...updates } : f),
-        updatedAt: new Date()
-      })));
+  const updateFile = (fileId: string, content: string) => {
+    if (!currentProject) return
 
-      if (currentProject) {
-        setCurrentProject(prev => prev ? {
-          ...prev,
-          files: prev.files.map(f => f.id === fileId ? { ...f, ...updates } : f),
-          updatedAt: new Date()
-        } : null);
-      }
+    const updatedFiles = currentProject.files.map(file =>
+      file.id === fileId
+        ? { ...file, content, updatedAt: new Date().toISOString() }
+        : file
+    )
 
-      if (currentFile?.id === fileId) {
-        setCurrentFile(prev => prev ? { ...prev, ...updates } : null);
-      }
-    } catch (error) {
-      const errorMessage = "Failed to update file";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+    const updatedProject = {
+      ...currentProject,
+      files: updatedFiles,
+      updatedAt: new Date().toISOString()
     }
-  };
 
-  const deleteFile = async (fileId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+    setCurrentProject(updatedProject)
 
-    try {
-      setProjects(prev => prev.map(p => ({
-        ...p,
-        files: p.files.filter(f => f.id !== fileId),
-        updatedAt: new Date()
-      })));
-
-      if (currentProject) {
-        setCurrentProject(prev => prev ? {
-          ...prev,
-          files: prev.files.filter(f => f.id !== fileId),
-          updatedAt: new Date()
-        } : null);
-      }
-
-      if (currentFile?.id === fileId) {
-        setCurrentFile(null);
-      }
-    } catch (error) {
-      const errorMessage = "Failed to delete file";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+    if (activeFile?.id === fileId) {
+      setActiveFile({ ...activeFile, content })
     }
-  };
+  }
 
-  const value: EditorContextType = {
-    projects,
+  const deleteFile = (fileId: string) => {
+    if (!currentProject) return
+
+    const updatedFiles = currentProject.files.filter(file => file.id !== fileId)
+    const updatedProject = {
+      ...currentProject,
+      files: updatedFiles,
+      updatedAt: new Date().toISOString()
+    }
+
+    setCurrentProject(updatedProject)
+
+    if (activeFile?.id === fileId) {
+      setActiveFile(updatedFiles[0] || null)
+    }
+  }
+
+  const value = {
     currentProject,
-    setCurrentProject,
+    projects,
+    activeFile,
+    loading,
     createProject,
-    updateProject,
+    loadProject,
+    saveProject,
     deleteProject,
-    currentFile,
-    setCurrentFile,
     createFile,
     updateFile,
     deleteFile,
-    isLoading,
-    error,
-    setError,
-  };
+    setActiveFile,
+    refreshProjects
+  }
 
   return (
     <EditorContext.Provider value={value}>
       {children}
     </EditorContext.Provider>
-  );
+  )
 }
 
 export function useEditor() {
-  const context = useContext(EditorContext);
+  const context = useContext(EditorContext)
   if (context === undefined) {
-    throw new Error("useEditor must be used within an EditorProvider");
+    throw new Error("useEditor must be used within an EditorProvider")
   }
-  return context;
+  return context
 }
