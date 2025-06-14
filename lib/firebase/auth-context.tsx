@@ -1,201 +1,119 @@
+"use client";
 
-"use client"
-
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
   User,
-  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  onAuthStateChanged,
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
-  sendPasswordResetEmail,
-  updateProfile
-} from "firebase/auth"
-import { auth, db } from "./config"
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
-import {
-  UserRole,
-  UserData
-} from "./users"
-import { setSessionCookie, clearSessionCookie } from "../utils/cookies"
+} from "firebase/auth";
+import { auth, db } from "./config";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { UserData } from "./users";
 
 interface AuthContextType {
-  user: User | null
-  userData: UserData | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, displayName?: string) => Promise<void>
-  signInWithGoogle: () => Promise<void>
-  signInWithGithub: () => Promise<void>
-  logout: () => Promise<void>
-  resetPassword: (email: string) => Promise<void>
-  updateUserProfile: (displayName: string, photoURL?: string) => Promise<void>
+  user: User | null;
+  userData: UserData | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithGithub: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [loading, setLoading] = useState(true)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
-      setLoading(false)
-      return
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user)
+      setUser(user);
 
-      if (user && db) {
-        // Get additional user data from Firestore
+      if (user) {
+        // Fetch user data from Firestore
         try {
-          const userDoc = await getDoc(doc(db, "users", user.uid))
+          const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
-            setUserData(userDoc.data() as UserData)
+            setUserData(userDoc.data() as UserData);
           } else {
             // Create user document if it doesn't exist
             const newUserData: UserData = {
               uid: user.uid,
               email: user.email || "",
-              displayName: user.displayName || "",
-              photoURL: user.photoURL || "",
-              role: "user" as UserRole,
+              displayName: user.displayName || "User",
+              role: "user",
               createdAt: new Date(),
-              updatedAt: new Date()
-            }
-            await setDoc(doc(db, "users", user.uid), {
-              ...newUserData,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            })
-            setUserData(newUserData)
+              lastLoginAt: new Date(),
+            };
+            await setDoc(doc(db, "users", user.uid), newUserData);
+            setUserData(newUserData);
           }
-
-          // Set session cookie
-          const token = await user.getIdToken()
-          setSessionCookie(token)
         } catch (error) {
-          console.error("Error fetching user data:", error)
+          console.error("Error fetching user data:", error);
         }
       } else {
-        setUserData(null)
-        clearSessionCookie()
+        setUserData(null);
       }
 
-      setLoading(false)
-    })
+      setLoading(false);
+    });
 
-    return () => unsubscribe()
-  }, [])
+    return unsubscribe;
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase auth not initialized")
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await updateLastLogin(result.user.uid);
+  };
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password)
-    } catch (error: any) {
-      console.error("Sign in error:", error)
-      throw error
-    }
-  }
-
-  const signUp = async (email: string, password: string, displayName?: string) => {
-    if (!auth) throw new Error("Firebase auth not initialized")
-
-    try {
-      const { user } = await createUserWithEmailAndPassword(auth, email, password)
-
-      if (displayName) {
-        await updateProfile(user, { displayName })
-      }
-    } catch (error: any) {
-      console.error("Sign up error:", error)
-      throw error
-    }
-  }
+  const signUp = async (email: string, password: string, displayName: string) => {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const userData: UserData = {
+      uid: result.user.uid,
+      email,
+      displayName,
+      role: "user",
+      createdAt: new Date(),
+      lastLoginAt: new Date(),
+    };
+    await setDoc(doc(db, "users", result.user.uid), userData);
+  };
 
   const signInWithGoogle = async () => {
-    if (!auth) throw new Error("Firebase auth not initialized")
-
-    try {
-      const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
-    } catch (error: any) {
-      console.error("Google sign in error:", error)
-      throw error
-    }
-  }
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    await updateLastLogin(result.user.uid);
+  };
 
   const signInWithGithub = async () => {
-    if (!auth) throw new Error("Firebase auth not initialized")
-
-    try {
-      const provider = new GithubAuthProvider()
-      await signInWithPopup(auth, provider)
-    } catch (error: any) {
-      console.error("GitHub sign in error:", error)
-      throw error
-    }
-  }
+    const provider = new GithubAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    await updateLastLogin(result.user.uid);
+  };
 
   const logout = async () => {
-    if (!auth) throw new Error("Firebase auth not initialized")
+    await signOut(auth);
+  };
 
+  const updateLastLogin = async (uid: string) => {
     try {
-      await signOut(auth)
-      clearSessionCookie()
-    } catch (error: any) {
-      console.error("Logout error:", error)
-      throw error
+      await setDoc(
+        doc(db, "users", uid),
+        { lastLoginAt: new Date() },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Error updating last login:", error);
     }
-  }
-
-  const resetPassword = async (email: string) => {
-    if (!auth) throw new Error("Firebase auth not initialized")
-
-    try {
-      await sendPasswordResetEmail(auth, email)
-    } catch (error: any) {
-      console.error("Reset password error:", error)
-      throw error
-    }
-  }
-
-  const updateUserProfile = async (displayName: string, photoURL?: string) => {
-    if (!auth?.currentUser) throw new Error("No user logged in")
-
-    try {
-      await updateProfile(auth.currentUser, {
-        displayName,
-        ...(photoURL && { photoURL })
-      })
-
-      // Update Firestore document
-      if (db) {
-        await setDoc(doc(db, "users", auth.currentUser.uid), {
-          displayName,
-          ...(photoURL && { photoURL }),
-          updatedAt: serverTimestamp()
-        }, { merge: true })
-      }
-    } catch (error: any) {
-      console.error("Update profile error:", error)
-      throw error
-    }
-  }
+  };
 
   const value = {
     user,
@@ -206,9 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signInWithGithub,
     logout,
-    resetPassword,
-    updateUserProfile
-  }
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

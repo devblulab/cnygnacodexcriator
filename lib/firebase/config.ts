@@ -1,6 +1,4 @@
-` tags.
 
-```typescript
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth, connectAuthEmulator } from "firebase/auth"
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"
@@ -19,7 +17,7 @@ const firebaseConfig = {
 // Check if all required config values are present
 const requiredEnvVars = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 
   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
@@ -38,17 +36,17 @@ let app
 try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
 } catch (error) {
-  console.error('Firebase: Cannot initialize due to missing configuration')
-  app = null
+  console.error('Firebase initialization error:', error)
+  app = initializeApp(firebaseConfig)
 }
 
 // Initialize Firebase services
-export const auth = app ? getAuth(app) : null
-export const db = app ? getFirestore(app) : null
-export const storage = app ? getStorage(app) : null
+export const auth = getAuth(app)
+export const db = getFirestore(app)
+export const storage = getStorage(app)
 
 // Connect to emulators in development
-if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" && auth && db && storage) {
+if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true") {
   try {
     connectAuthEmulator(auth, "http://localhost:9099")
     connectFirestoreEmulator(db, "localhost", 8080)
