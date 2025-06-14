@@ -1,328 +1,342 @@
 
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Send, 
-  Bot, 
-  User, 
-  Code, 
-  Sparkles, 
-  Copy, 
+import {
+  Send,
+  Bot,
+  User,
+  Code,
+  Copy,
   Download,
-  Wand2,
-  Zap,
-  Eye,
-  Play
+  Sparkles,
+  Loader2,
+  FileText,
+  Palette,
+  Zap
 } from "lucide-react"
-import { useEditor } from "@/context/editor-context"
-import geminiService from "@/lib/ai/gemini-service"
+import { toast } from "@/hooks/use-toast"
 
-interface ChatMessage {
+interface Message {
   id: string
-  type: 'user' | 'assistant'
+  type: "user" | "assistant"
   content: string
-  timestamp: number
-  code?: string
-  preview?: string
-  language?: string
+  timestamp: Date
+  codeBlocks?: CodeBlock[]
 }
 
-export default function V0Chat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+interface CodeBlock {
+  language: string
+  code: string
+  filename?: string
+}
+
+export function V0Chat() {
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       type: "assistant",
-      content: "👋 Olá! Sou o assistente QuantumCode, inspirado no v0.dev.\n\nPosso ajudar você a:\n\n🎨 **Criar interfaces** - Descreva o que quer e gero o código\n🔧 **Corrigir bugs** - Analiso e corrijo problemas no código\n⚡ **Otimizar código** - Melhoro performance e legibilidade\n🌐 **Traduzir linguagens** - Converto entre diferentes tecnologias\n\nDigite sua ideia ou comando para começar!",
-      timestamp: Date.now(),
-    },
+      content: "Hello! I'm your AI assistant. I can help you build components, write code, and create amazing web experiences. What would you like to build today?",
+      timestamp: new Date()
+    }
   ])
-  
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedCode, setSelectedCode] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { createFile, setCurrentFile } = useEditor()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const suggestedPrompts = [
+    {
+      icon: <Code className="w-4 h-4" />,
+      text: "Create a modern button component",
+      category: "Component"
+    },
+    {
+      icon: <Palette className="w-4 h-4" />,
+      text: "Design a dashboard layout",
+      category: "Layout"
+    },
+    {
+      icon: <FileText className="w-4 h-4" />,
+      text: "Build a form with validation",
+      category: "Form"
+    },
+    {
+      icon: <Zap className="w-4 h-4" />,
+      text: "Add animations to my component",
+      category: "Animation"
+    }
+  ]
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  const addMessage = (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
-    const newMessage: ChatMessage = {
-      ...message,
-      id: Math.random().toString(36),
-      timestamp: Date.now()
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
-    setMessages(prev => [...prev, newMessage])
-  }
+  }, [messages])
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return
 
-    const userMessage = input.trim()
-    setInput("")
-    
-    addMessage({
-      type: 'user',
-      content: userMessage
-    })
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: "user",
+      content: input,
+      timestamp: new Date()
+    }
 
+    setMessages(prev => [...prev, userMessage])
+    setInput("")
     setIsLoading(true)
 
     try {
-      // Detectar tipo de comando
-      const lowerInput = userMessage.toLowerCase()
-      
-      if (lowerInput.includes('crie') || lowerInput.includes('gere') || lowerInput.includes('faça')) {
-        // Gerar interface
-        const result = await geminiService.generateInterface(userMessage)
-        addMessage({
-          type: 'assistant',
-          content: `✨ **Interface criada com sucesso!**\n\n${result.explanation}\n\nO código foi gerado e está pronto para usar. Você pode visualizar, copiar ou baixar o arquivo.`,
-          code: result.code,
-          preview: result.preview,
-          language: 'tsx'
-        })
-      } else if (lowerInput.includes('explique') || lowerInput.includes('o que faz')) {
-        if (selectedCode) {
-          const explanation = await geminiService.explainCode(selectedCode)
-          addMessage({
-            type: 'assistant',
-            content: `📖 **Explicação do código:**\n\n${explanation}`
-          })
-        } else {
-          addMessage({
-            type: 'assistant',
-            content: "Por favor, selecione um código primeiro ou cole o código que deseja que eu explique."
-          })
-        }
-      } else if (lowerInput.includes('corrija') || lowerInput.includes('debug') || lowerInput.includes('erro')) {
-        if (selectedCode) {
-          const result = await geminiService.debugCode(selectedCode, 'Análise geral do código')
-          addMessage({
-            type: 'assistant',
-            content: `🔧 **Problemas encontrados e soluções:**\n\n**Solução:** ${result.solution}\n\n**Explicação:** ${result.explanation}`,
-            code: result.fixedCode,
-            language: 'tsx'
-          })
-        } else {
-          addMessage({
-            type: 'assistant',
-            content: "Por favor, forneça o código que está com problema para que eu possa analisar e corrigir."
-          })
-        }
-      } else if (lowerInput.includes('otimize') || lowerInput.includes('melhore')) {
-        if (selectedCode) {
-          const result = await geminiService.refactorCode(selectedCode, 'otimização geral')
-          addMessage({
-            type: 'assistant',
-            content: `⚡ **Código otimizado!**\n\n**Melhorias aplicadas:**\n${result.improvements.map(imp => `• ${imp}`).join('\n')}\n\n**Explicação:** ${result.explanation}`,
-            code: result.refactoredCode,
-            language: 'tsx'
-          })
-        } else {
-          addMessage({
-            type: 'assistant',
-            content: "Por favor, forneça o código que deseja otimizar."
-          })
-        }
-      } else {
-        // Resposta geral
-        const response = await geminiService.processMessage(userMessage, 'IDE colaborativa inspirada no v0.dev')
-        addMessage({
-          type: 'assistant',
-          content: response
-        })
+      // Simulate AI response - In a real app, this would call your AI service
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content: `I understand you want to: "${input}". Here's a solution for you:`,
+        timestamp: new Date(),
+        codeBlocks: [
+          {
+            language: "tsx",
+            filename: "MyComponent.tsx",
+            code: `import React from 'react'
+import { Button } from '@/components/ui/button'
+
+export function MyComponent() {
+  return (
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">Your Component</h2>
+      <p className="text-gray-600 mb-4">
+        This component was generated based on your request.
+      </p>
+      <Button className="bg-blue-600 hover:bg-blue-700">
+        Click me
+      </Button>
+    </div>
+  )
+}`
+          }
+        ]
       }
+
+      setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      addMessage({
-        type: 'assistant',
-        content: '❌ Ops! Ocorreu um erro ao processar sua solicitação. Verifique sua conexão e tente novamente.'
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive"
       })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
+  const handleSuggestedPrompt = (prompt: string) => {
+    setInput(prompt)
+    inputRef.current?.focus()
   }
 
-  const downloadCode = (code: string, filename: string = 'generated-code.tsx') => {
-    const blob = new Blob([code], { type: 'text/plain' })
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast({
+        title: "Copied!",
+        description: "Code copied to clipboard"
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const downloadCode = (code: string, filename: string) => {
+    const blob = new Blob([code], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
     a.download = filename
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
 
-  const addToProject = (code: string, filename: string = 'generated-component.tsx') => {
-    const file = createFile(filename, code, 'tsx')
-    setCurrentFile(file)
-  }
-
-  const quickCommands = [
-    { label: "Criar landing page", command: "Crie uma landing page moderna com header, hero section e footer" },
-    { label: "Formulário de contato", command: "Gere um formulário de contato responsivo com validação" },
-    { label: "Dashboard admin", command: "Faça um dashboard administrativo com sidebar e cards" },
-    { label: "Navbar responsivo", command: "Crie um navbar moderno e responsivo com menu mobile" },
-  ]
-
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-            <Sparkles className="h-4 w-4 text-white" />
+      <div className="flex items-center justify-between p-4 border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold">QuantumCode Assistant</h3>
-            <p className="text-xs text-muted-foreground">Inspirado no v0.dev • Powered by Gemini</p>
+            <h2 className="font-semibold text-lg">AI Assistant</h2>
+            <p className="text-sm text-muted-foreground">Powered by Gemini</p>
           </div>
         </div>
-        
-        {/* Quick Commands */}
-        <div className="grid grid-cols-2 gap-2 mt-3">
-          {quickCommands.map((cmd, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              className="h-auto p-2 text-xs justify-start"
-              onClick={() => setInput(cmd.command)}
-            >
-              <Wand2 className="h-3 w-3 mr-1" />
-              {cmd.label}
-            </Button>
-          ))}
-        </div>
+        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+          Online
+        </Badge>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => (
-            <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : ''}`}>
-              {message.type === 'assistant' && (
-                <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shrink-0">
-                  <Bot className="h-4 w-4" />
-                </div>
-              )}
-              
-              <div className={`max-w-[85%] ${message.type === 'user' ? 'order-first' : ''}`}>
-                <Card className={message.type === 'user' ? 'bg-primary text-primary-foreground' : ''}>
-                  <CardContent className="p-3">
-                    <div className="whitespace-pre-wrap text-sm mb-2">
-                      {message.content}
-                    </div>
-                    
-                    {/* Code Block */}
-                    {message.code && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Code className="h-4 w-4" />
-                            <Badge variant="secondary">{message.language}</Badge>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => copyCode(message.code!)}>
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => downloadCode(message.code!)}>
-                              <Download className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => addToProject(message.code!)}>
-                              <Play className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-                          <code>{message.code}</code>
-                        </pre>
-                      </div>
-                    )}
-                    
-                    {/* Preview */}
-                    {message.preview && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Eye className="h-4 w-4" />
-                          <span className="text-sm font-medium">Preview</span>
-                        </div>
-                        <div 
-                          className="border rounded p-3 bg-white" 
-                          dangerouslySetInnerHTML={{ __html: message.preview }}
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {new Date(message.timestamp).toLocaleTimeString()}
-                    </div>
-                  </CardContent>
-                </Card>
+            <div
+              key={message.id}
+              className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                message.type === "user" 
+                  ? "bg-blue-500" 
+                  : "bg-gradient-to-r from-purple-500 to-pink-500"
+              }`}>
+                {message.type === "user" ? (
+                  <User className="w-4 h-4 text-white" />
+                ) : (
+                  <Bot className="w-4 h-4 text-white" />
+                )}
               </div>
               
-              {message.type === 'user' && (
-                <div className="p-2 rounded-full bg-secondary shrink-0">
-                  <User className="h-4 w-4" />
-                </div>
-              )}
+              <div className={`flex-1 max-w-[80%] ${message.type === "user" ? "text-right" : ""}`}>
+                <Card className={`${
+                  message.type === "user" 
+                    ? "bg-blue-500 text-white ml-auto" 
+                    : "bg-white dark:bg-slate-800"
+                }`}>
+                  <CardContent className="p-3">
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    
+                    {message.codeBlocks && message.codeBlocks.map((block, index) => (
+                      <div key={index} className="mt-3">
+                        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <Code className="w-4 h-4" />
+                            <span className="text-xs font-mono">{block.filename || block.language}</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(block.code)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => downloadCode(block.code, block.filename || `code.${block.language}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <pre className="bg-slate-50 dark:bg-slate-900 p-3 rounded-b-lg overflow-x-auto">
+                          <code className="text-xs">{block.code}</code>
+                        </pre>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {message.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
             </div>
           ))}
           
           {isLoading && (
             <div className="flex gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                <Bot className="h-4 w-4" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
               </div>
-              <Card>
+              <Card className="bg-white dark:bg-slate-800">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                    <span className="text-sm text-muted-foreground ml-2">Gerando resposta...</span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">AI is thinking...</span>
                   </div>
                 </CardContent>
               </Card>
             </div>
           )}
-          
-          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
+      {/* Suggested Prompts */}
+      {messages.length === 1 && (
+        <div className="p-4 border-t bg-white/50 dark:bg-slate-900/50">
+          <p className="text-sm font-medium mb-3">Try these suggestions:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {suggestedPrompts.map((prompt, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="justify-start h-auto p-3 text-left"
+                onClick={() => handleSuggestedPrompt(prompt.text)}
+              >
+                <div className="flex items-start gap-2 w-full">
+                  {prompt.icon}
+                  <div>
+                    <p className="text-sm">{prompt.text}</p>
+                    <p className="text-xs text-muted-foreground">{prompt.category}</p>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input */}
-      <div className="p-4 border-t bg-muted/30">
-        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
+      <div className="p-4 border-t bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+        <div className="flex gap-2">
           <Input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Descreva o que você quer criar... (ex: 'Crie uma landing page moderna')"
+            placeholder="Ask me to build something amazing..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                handleSendMessage()
+              }
+            }}
             disabled={isLoading}
             className="flex-1"
           />
-          <Button type="submit" disabled={!input.trim() || isLoading} size="icon">
-            <Send className="h-4 w-4" />
+          <Button
+            onClick={handleSendMessage}
+            disabled={!input.trim() || isLoading}
+            size="icon"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
-        </form>
-        
-        <div className="flex items-center justify-center mt-2">
-          <p className="text-xs text-muted-foreground">
-            💡 Dica: Seja específico sobre o que deseja criar para melhores resultados
-          </p>
         </div>
+        <p className="text-xs text-muted-foreground mt-2 text-center">
+          Press Enter to send, Shift+Enter for new line
+        </p>
       </div>
     </div>
   )

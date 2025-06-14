@@ -6,6 +6,8 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/lib/firebase/auth-context";
+import { EditorProvider } from "@/context/editor-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +22,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
+          <AuthProvider>
+            <EditorProvider>
+              {children}
+            </EditorProvider>
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>
