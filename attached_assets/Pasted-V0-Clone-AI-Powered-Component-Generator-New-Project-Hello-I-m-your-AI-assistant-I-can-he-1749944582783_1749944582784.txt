@@ -1,0 +1,655 @@
+V0 Clone
+AI-Powered Component Generator
+
+
+New Project
+👋 Hello! I'm your AI assistant. I can help you build beautiful React components with Tailwind CSS and TypeScript. What would you like to create today?
+
+20:41:54
+
+✨ Try these suggestions:
+
+
+Create a modern login form with animations
+
+Form
+
+
+Build a responsive pricing card component
+
+Component
+
+
+Design a dashboard with charts and stats
+
+Layout
+
+
+Create a blog post card with author info
+
+Content
+
+Describe the component you want to build...
+
+Press Enter to send, Shift+Enter for new line
+
+No Component Selected
+Generate a component to see it here
+
+Build Error
+Failed to compile
+
+Next.js (14.2.16) is outdated (learn more)
+./lib/ai/gemini-service.ts
+Error: 
+  × the name `GeminiService` is defined multiple times
+     ╭─[/home/runner/workspace/lib/ai/gemini-service.ts:3:1]
+   3 │ 
+   4 │ import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai"
+   5 │ 
+   6 │ class GeminiService {
+     ·       ──────┬──────
+     ·             ╰── previous definition of `GeminiService` here
+   7 │   private genAI: GoogleGenerativeAI | null = null
+   8 │   private model: GenerativeModel | null = null
+   9 │ 
+  10 │   constructor() {
+  11 │     if (typeof window !== "undefined") {
+  12 │       this.initialize()
+  13 │     }
+  14 │   }
+  15 │ 
+  16 │   private initialize() {
+  17 │     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
+  18 │     if (!apiKey) {
+  19 │       console.error("Gemini API key not found")
+  20 │       return
+  21 │     }
+  22 │ 
+  23 │     try {
+  24 │       this.genAI = new GoogleGenerativeAI(apiKey)
+  25 │       this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" })
+  26 │     } catch (error) {
+  27 │       console.error("Failed to initialize Gemini:", error)
+  28 │     }
+  29 │   }
+  30 │ 
+  31 │   // Geração de interfaces React/Next.js
+  32 │   async generateInterface(prompt: string): Promise<{
+  33 │     code: string
+  34 │     preview: string
+  35 │     explanation: string
+  36 │   }> {
+  37 │     if (!this.model) {
+  38 │       throw new Error("Gemini not initialized")
+  39 │     }
+  40 │ 
+  41 │     const enhancedPrompt = `
+  42 │ Gere uma interface React/Next.js moderna e responsiva baseada nesta descrição: "${prompt}"
+  43 │ 
+  44 │ Requisitos:
+  45 │ - Use Tailwind CSS para estilização
+  46 │ - Componentes funcionais com TypeScript
+  47 │ - Design moderno e minimalista inspirado no v0.dev
+  48 │ - Código limpo e bem estruturado
+  49 │ - Componentes reutilizáveis
+  50 │ - Acessibilidade (ARIA labels)
+  51 │ - Responsividade (mobile-first)
+  52 │ 
+  53 │ Retorne no formato JSON:
+  54 │ {
+  55 │   "code": "código React/TypeScript completo",
+  56 │   "preview": "HTML preview da interface",
+  57 │   "explanation": "explicação detalhada em português do que foi criado"
+  58 │ }
+  59 │ `
+  60 │ 
+  61 │     try {
+  62 │       const result = await this.model.generateContent(enhancedPrompt)
+  63 │       const response = await result.response
+  64 │       const text = response.text()
+  65 │       
+  66 │       // Parse da resposta JSON
+  67 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+  68 │       if (jsonMatch) {
+  69 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+  70 │       }
+  71 │       
+  72 │       // Fallback se não conseguir parsear JSON
+  73 │       return {
+  74 │         code: text,
+  75 │         preview: "<div>Preview não disponível</div>",
+  76 │         explanation: "Interface gerada com sucesso"
+  77 │       }
+  78 │     } catch (error) {
+  79 │       console.error("Erro ao gerar interface:", error)
+  80 │       throw error
+  81 │     }
+  82 │   }
+  83 │ 
+  84 │   // Geração de componentes específicos
+  85 │   async generateComponent(type: string, props: Record<string, any>): Promise<string> {
+  86 │     if (!this.model) {
+  87 │       throw new Error("Gemini not initialized")
+  88 │     }
+  89 │ 
+  90 │     const prompt = `
+  91 │ Gere um componente React ${type} com as seguintes propriedades: ${JSON.stringify(props)}
+  92 │ 
+  93 │ Requisitos:
+  94 │ - TypeScript
+  95 │ - Tailwind CSS
+  96 │ - Acessível
+  97 │ - Responsivo
+  98 │ - Moderno
+  99 │ 
+ 100 │ Retorne apenas o código do componente.
+ 101 │ `
+ 102 │ 
+ 103 │     try {
+ 104 │       const result = await this.model.generateContent(prompt)
+ 105 │       const response = await result.response
+ 106 │       return response.text()
+ 107 │     } catch (error) {
+ 108 │       console.error("Erro ao gerar componente:", error)
+ 109 │       throw error
+ 110 │     }
+ 111 │   }
+ 112 │ 
+ 113 │   // Explicação de código
+ 114 │   async explainCode(code: string): Promise<string> {
+ 115 │     if (!this.model) {
+ 116 │       throw new Error("Gemini not initialized")
+ 117 │     }
+ 118 │ 
+ 119 │     const prompt = `
+ 120 │ Explique este código em português brasileiro de forma didática e detalhada:
+ 121 │ 
+ 122 │ \`\`\`
+ 123 │ ${code}
+ 124 │ \`\`\`
+ 125 │ 
+ 126 │ Inclua:
+ 127 │ - O que o código faz
+ 128 │ - Como funciona cada parte
+ 129 │ - Conceitos utilizados
+ 130 │ - Melhores práticas aplicadas
+ 131 │ `
+ 132 │ 
+ 133 │     try {
+ 134 │       const result = await this.model.generateContent(prompt)
+ 135 │       const response = await result.response
+ 136 │       return response.text()
+ 137 │     } catch (error) {
+ 138 │       console.error("Erro ao explicar código:", error)
+ 139 │       throw error
+ 140 │     }
+ 141 │   }
+ 142 │ 
+ 143 │   // Debug inteligente
+ 144 │   async debugCode(code: string, error: string): Promise<{
+ 145 │     solution: string
+ 146 │     explanation: string
+ 147 │     fixedCode: string
+ 148 │   }> {
+ 149 │     if (!this.model) {
+ 150 │       throw new Error("Gemini not initialized")
+ 151 │     }
+ 152 │ 
+ 153 │     const prompt = `
+ 154 │ Analise este código com erro e forneça uma solução:
+ 155 │ 
+ 156 │ Código:
+ 157 │ \`\`\`
+ 158 │ ${code}
+ 159 │ \`\`\`
+ 160 │ 
+ 161 │ Erro:
+ 162 │ ${error}
+ 163 │ 
+ 164 │ Retorne no formato JSON:
+ 165 │ {
+ 166 │   "solution": "solução em português",
+ 167 │   "explanation": "explicação detalhada do problema e como corrigir",
+ 168 │   "fixedCode": "código corrigido"
+ 169 │ }
+ 170 │ `
+ 171 │ 
+ 172 │     try {
+ 173 │       const result = await this.model.generateContent(prompt)
+ 174 │       const response = await result.response
+ 175 │       const text = response.text()
+ 176 │       
+ 177 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+ 178 │       if (jsonMatch) {
+ 179 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+ 180 │       }
+ 181 │       
+ 182 │       return {
+ 183 │         solution: "Solução não encontrada automaticamente",
+ 184 │         explanation: text,
+ 185 │         fixedCode: code
+ 186 │       }
+ 187 │     } catch (error) {
+ 188 │       console.error("Erro ao debugar código:", error)
+ 189 │       throw error
+ 190 │     }
+ 191 │   }
+ 192 │ 
+ 193 │   // Refatoração automática
+ 194 │   async refactorCode(code: string, goal: string = "otimização"): Promise<{
+ 195 │     refactoredCode: string
+ 196 │     improvements: string[]
+ 197 │     explanation: string
+ 198 │   }> {
+ 199 │     if (!this.model) {
+ 200 │       throw new Error("Gemini not initialized")
+ 201 │     }
+ 202 │ 
+ 203 │     const prompt = `
+ 204 │ Refatore este código para ${goal}:
+ 205 │ 
+ 206 │ \`\`\`
+ 207 │ ${code}
+ 208 │ \`\`\`
+ 209 │ 
+ 210 │ Foque em:
+ 211 │ - Performance
+ 212 │ - Legibilidade
+ 213 │ - Manutenibilidade
+ 214 │ - Acessibilidade
+ 215 │ - Boas práticas
+ 216 │ 
+ 217 │ Retorne no formato JSON:
+ 218 │ {
+ 219 │   "refactoredCode": "código refatorado",
+ 220 │   "improvements": ["lista de melhorias aplicadas"],
+ 221 │   "explanation": "explicação das mudanças em português"
+ 222 │ }
+ 223 │ `
+ 224 │ 
+ 225 │     try {
+ 226 │       const result = await this.model.generateContent(prompt)
+ 227 │       const response = await result.response
+ 228 │       const text = response.text()
+ 229 │       
+ 230 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+ 231 │       if (jsonMatch) {
+ 232 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+ 233 │       }
+ 234 │       
+ 235 │       return {
+ 236 │         refactoredCode: code,
+ 237 │         improvements: [],
+ 238 │         explanation: text
+ 239 │       }
+ 240 │     } catch (error) {
+ 241 │       console.error("Erro ao refatorar código:", error)
+ 242 │       throw error
+ 243 │     }
+ 244 │   }
+ 245 │ 
+ 246 │   // Tradução de código entre linguagens
+ 247 │   async translateCode(code: string, fromLang: string, toLang: string): Promise<{
+ 248 │     translatedCode: string
+ 249 │     explanation: string
+ 250 │     differences: string[]
+ 251 │   }> {
+ 252 │     if (!this.model) {
+ 253 │       throw new Error("Gemini not initialized")
+ 254 │     }
+ 255 │ 
+ 256 │     const prompt = `
+ 257 │ Traduza este código de ${fromLang} para ${toLang}:
+ 258 │ 
+ 259 │ \`\`\`${fromLang}
+ 260 │ ${code}
+ 261 │ \`\`\`
+ 262 │ 
+ 263 │ Retorne no formato JSON:
+ 264 │ {
+ 265 │   "translatedCode": "código traduzido para ${toLang}",
+ 266 │   "explanation": "explicação da tradução em português",
+ 267 │   "differences": ["principais diferenças entre as linguagens"]
+ 268 │ }
+ 269 │ `
+ 270 │ 
+ 271 │     try {
+ 272 │       const result = await this.model.generateContent(prompt)
+ 273 │       const response = await result.response
+ 274 │       const text = response.text()
+ 275 │       
+ 276 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+ 277 │       if (jsonMatch) {
+ 278 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+ 279 │       }
+ 280 │       
+ 281 │       return {
+ 282 │         translatedCode: code,
+ 283 │         explanation: text,
+ 284 │         differences: []
+ 285 │       }
+ 286 │     } catch (error) {
+ 287 │       console.error("Erro ao traduzir código:", error)
+ 288 │       throw error
+ 289 │     }
+ 290 │   }
+ 291 │ 
+ 292 │   // Geração de código quântico
+ 293 │   async generateQuantumCode(algorithm: string): Promise<{
+ 294 │     code: string
+ 295 │     explanation: string
+ 296 │     circuit: string
+ 297 │   }> {
+ 298 │     if (!this.model) {
+ 299 │       throw new Error("Gemini not initialized")
+ 300 │     }
+ 301 │ 
+ 302 │     const prompt = `
+ 303 │ Gere código de computação quântica para o algoritmo: ${algorithm}
+ 304 │ 
+ 305 │ Use Qiskit (Python) e inclua:
+ 306 │ - Código completo e funcional
+ 307 │ - Comentários em português
+ 308 │ - Explicação do algoritmo
+ 309 │ - Representação do circuito
+ 310 │ 
+ 311 │ Retorne no formato JSON:
+ 312 │ {
+ 313 │   "code": "código Python com Qiskit",
+ 314 │   "explanation": "explicação detalhada em português",
+ 315 │   "circuit": "representação textual do circuito"
+ 316 │ }
+ 317 │ `
+ 318 │ 
+ 319 │     try {
+ 320 │       const result = await this.model.generateContent(prompt)
+ 321 │       const response = await result.response
+ 322 │       const text = response.text()
+ 323 │       
+ 324 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+ 325 │       if (jsonMatch) {
+ 326 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+ 327 │       }
+ 328 │       
+ 329 │       return {
+ 330 │         code: text,
+ 331 │         explanation: "Código quântico gerado",
+ 332 │         circuit: "Circuito não disponível"
+ 333 │       }
+ 334 │     } catch (error) {
+ 335 │       console.error("Erro ao gerar código quântico:", error)
+ 336 │       throw error
+ 337 │     }
+ 338 │   }
+ 339 │ 
+ 340 │   // Sugestões de arquitetura
+ 341 │   async suggestArchitecture(projectDescription: string): Promise<{
+ 342 │     architecture: string
+ 343 │     components: string[]
+ 344 │     explanation: string
+ 345 │     diagram: string
+ 346 │   }> {
+ 347 │     if (!this.model) {
+ 348 │       throw new Error("Gemini not initialized")
+ 349 │     }
+ 350 │ 
+ 351 │     const prompt = `
+ 352 │ Sugira uma arquitetura de software para: ${projectDescription}
+ 353 │ 
+ 354 │ Inclua:
+ 355 │ - Padrões de arquitetura recomendados
+ 356 │ - Componentes principais
+ 357 │ - Fluxo de dados
+ 358 │ - Tecnologias recomendadas
+ 359 │ - Diagrama textual
+ 360 │ 
+ 361 │ Retorne no formato JSON:
+ 362 │ {
+ 363 │   "architecture": "tipo de arquitetura recomendada",
+ 364 │   "components": ["lista de componentes"],
+ 365 │   "explanation": "explicação detalhada em português",
+ 366 │   "diagram": "diagrama textual da arquitetura"
+ 367 │ }
+ 368 │ `
+ 369 │ 
+ 370 │     try {
+ 371 │       const result = await this.model.generateContent(prompt)
+ 372 │       const response = await result.response
+ 373 │       const text = response.text()
+ 374 │       
+ 375 │       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+ 376 │       if (jsonMatch) {
+ 377 │         return JSON.parse(jsonMatch[1] || jsonMatch[0])
+ 378 │       }
+ 379 │       
+ 380 │       return {
+ 381 │         architecture: "Arquitetura modular",
+ 382 │         components: [],
+ 383 │         explanation: text,
+ 384 │         diagram: "Diagrama não disponível"
+ 385 │       }
+ 386 │     } catch (error) {
+ 387 │       console.error("Erro ao sugerir arquitetura:", error)
+ 388 │       throw error
+ 389 │     }
+ 390 │   }
+ 391 │ 
+ 392 │   // Chat colaborativo
+ 393 │   async processMessage(message: string, context: string = ""): Promise<string> {
+ 394 │     if (!this.model) {
+ 395 │       throw new Error("Gemini not initialized")
+ 396 │     }
+ 397 │ 
+ 398 │     const prompt = `
+ 399 │ ${context ? `Contexto: ${context}\n` : ""}
+ 400 │ Usuário: ${message}
+ 401 │ 
+ 402 │ Responda de forma útil e amigável em português brasileiro. Se for uma pergunta técnica, forneça exemplos de código quando apropriado.
+ 403 │ `
+ 404 │ 
+ 405 │     try {
+ 406 │       const result = await this.model.generateContent(prompt)
+ 407 │       const response = await result.response
+ 408 │       return response.text()
+ 409 │     } catch (error) {
+ 410 │       console.error("Erro ao processar mensagem:", error)
+ 411 │       throw error
+ 412 │     }
+ 413 │   }
+ 414 │ }
+ 415 │ 
+ 416 │ export const geminiService = new GeminiService()
+ 417 │ export default geminiService
+ 418 │ import { GoogleGenerativeAI } from "@google/generative-ai";
+ 419 │ 
+ 420 │ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+ 421 │ 
+ 422 │ if (!API_KEY) {
+ 423 │   console.warn("Gemini API key not found. Please set NEXT_PUBLIC_GEMINI_API_KEY in your environment variables.");
+ 424 │ }
+ 425 │ 
+ 426 │ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+ 427 │ 
+ 428 │ class GeminiService {
+     ·       ──────┬──────
+     ·             ╰── `GeminiService` redefined here
+ 429 │   private model: any;
+ 430 │ 
+ 431 │   constructor() {
+     ╰────
+
+  × the name `geminiService` is defined multiple times
+     ╭─[/home/runner/workspace/lib/ai/gemini-service.ts:413:1]
+ 413 │   }
+ 414 │ }
+ 415 │ 
+ 416 │ export const geminiService = new GeminiService()
+     ·              ──────┬──────
+     ·                    ╰── previous definition of `geminiService` here
+ 417 │ export default geminiService
+ 418 │ import { GoogleGenerativeAI } from "@google/generative-ai";
+ 419 │ 
+ 420 │ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+ 421 │ 
+ 422 │ if (!API_KEY) {
+ 423 │   console.warn("Gemini API key not found. Please set NEXT_PUBLIC_GEMINI_API_KEY in your environment variables.");
+ 424 │ }
+ 425 │ 
+ 426 │ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+ 427 │ 
+ 428 │ class GeminiService {
+ 429 │   private model: any;
+ 430 │ 
+ 431 │   constructor() {
+ 432 │     if (genAI) {
+ 433 │       this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+ 434 │     }
+ 435 │   }
+ 436 │ 
+ 437 │   async generateResponse(prompt: string): Promise<string> {
+ 438 │     if (!this.model) {
+ 439 │       throw new Error("Gemini AI is not configured. Please check your API key.");
+ 440 │     }
+ 441 │ 
+ 442 │     try {
+ 443 │       const result = await this.model.generateContent(prompt);
+ 444 │       const response = await result.response;
+ 445 │       return response.text();
+ 446 │     } catch (error) {
+ 447 │       console.error("Error generating response from Gemini:", error);
+ 448 │       throw new Error("Failed to generate response from Gemini AI");
+ 449 │     }
+ 450 │   }
+ 451 │ 
+ 452 │   async generateCode(description: string, framework: string = "react"): Promise<string> {
+ 453 │     const prompt = `Create a ${framework} component based on this description: ${description}. 
+ 454 │     Please provide only the component code with modern styling using Tailwind CSS. 
+ 455 │     Make it responsive and accessible. Include proper TypeScript types if applicable.
+ 456 │     
+ 457 │     Description: ${description}`;
+ 458 │ 
+ 459 │     return this.generateResponse(prompt);
+ 460 │   }
+ 461 │ 
+ 462 │   async improveCode(code: string, instructions: string): Promise<string> {
+ 463 │     const prompt = `Improve this code based on the following instructions: ${instructions}
+ 464 │     
+ 465 │     Current code:
+ 466 │     ${code}
+ 467 │     
+ 468 │     Please provide the improved version with explanations for the changes made.`;
+ 469 │ 
+ 470 │     return this.generateResponse(prompt);
+ 471 │   }
+ 472 │ 
+ 473 │   async explainCode(code: string): Promise<string> {
+ 474 │     const prompt = `Explain this code in detail, including:
+ 475 │     - What it does
+ 476 │     - How it works
+ 477 │     - Key features and patterns used
+ 478 │     - Potential improvements
+ 479 │     
+ 480 │     Code:
+ 481 │     ${code}`;
+ 482 │ 
+ 483 │     return this.generateResponse(prompt);
+ 484 │   }
+ 485 │ }
+ 486 │ 
+ 487 │ const geminiService = new GeminiService();
+     ·       ──────┬──────
+     ·             ╰── `geminiService` redefined here
+ 488 │ export default geminiService;
+     ╰────
+
+  × the name `default` is exported multiple times
+     ╭─[/home/runner/workspace/lib/ai/gemini-service.ts:414:1]
+ 414 │ }
+ 415 │ 
+ 416 │ export const geminiService = new GeminiService()
+ 417 │ export default geminiService
+     · ──────────────┬─────────────
+     ·               ╰── previous exported here
+ 418 │ import { GoogleGenerativeAI } from "@google/generative-ai";
+ 419 │ 
+ 420 │ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+ 421 │ 
+ 422 │ if (!API_KEY) {
+ 423 │   console.warn("Gemini API key not found. Please set NEXT_PUBLIC_GEMINI_API_KEY in your environment variables.");
+ 424 │ }
+ 425 │ 
+ 426 │ const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+ 427 │ 
+ 428 │ class GeminiService {
+ 429 │   private model: any;
+ 430 │ 
+ 431 │   constructor() {
+ 432 │     if (genAI) {
+ 433 │       this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+ 434 │     }
+ 435 │   }
+ 436 │ 
+ 437 │   async generateResponse(prompt: string): Promise<string> {
+ 438 │     if (!this.model) {
+ 439 │       throw new Error("Gemini AI is not configured. Please check your API key.");
+ 440 │     }
+ 441 │ 
+ 442 │     try {
+ 443 │       const result = await this.model.generateContent(prompt);
+ 444 │       const response = await result.response;
+ 445 │       return response.text();
+ 446 │     } catch (error) {
+ 447 │       console.error("Error generating response from Gemini:", error);
+ 448 │       throw new Error("Failed to generate response from Gemini AI");
+ 449 │     }
+ 450 │   }
+ 451 │ 
+ 452 │   async generateCode(description: string, framework: string = "react"): Promise<string> {
+ 453 │     const prompt = `Create a ${framework} component based on this description: ${description}. 
+ 454 │     Please provide only the component code with modern styling using Tailwind CSS. 
+ 455 │     Make it responsive and accessible. Include proper TypeScript types if applicable.
+ 456 │     
+ 457 │     Description: ${description}`;
+ 458 │ 
+ 459 │     return this.generateResponse(prompt);
+ 460 │   }
+ 461 │ 
+ 462 │   async improveCode(code: string, instructions: string): Promise<string> {
+ 463 │     const prompt = `Improve this code based on the following instructions: ${instructions}
+ 464 │     
+ 465 │     Current code:
+ 466 │     ${code}
+ 467 │     
+ 468 │     Please provide the improved version with explanations for the changes made.`;
+ 469 │ 
+ 470 │     return this.generateResponse(prompt);
+ 471 │   }
+ 472 │ 
+ 473 │   async explainCode(code: string): Promise<string> {
+ 474 │     const prompt = `Explain this code in detail, including:
+ 475 │     - What it does
+ 476 │     - How it works
+ 477 │     - Key features and patterns used
+ 478 │     - Potential improvements
+ 479 │     
+ 480 │     Code:
+ 481 │     ${code}`;
+ 482 │ 
+ 483 │     return this.generateResponse(prompt);
+ 484 │   }
+ 485 │ }
+ 486 │ 
+ 487 │ const geminiService = new GeminiService();
+ 488 │ export default geminiService;
+     · ──────────────┬──────────────
+     ·               ╰── exported more than once
+     ╰────
+
+Error: 
+  ☞ Exported identifiers must be unique
+
+Import trace for requested module:
+./lib/ai/gemini-service.ts
+./components/v0-clone/v0-interface.tsx
+This error occurred during the build process and can only be dismissed by fixing the error.
