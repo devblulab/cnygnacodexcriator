@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef, useEffect } from "react"
@@ -196,7 +195,7 @@ export default function V0Interface() {
 
   const downloadAllFiles = async (files: ProjectFile[]) => {
     setDownloadingFiles(true)
-    
+
     try {
       // Criar um arquivo ZIP com todos os arquivos seria ideal
       // Por enquanto, vamos baixar cada arquivo individualmente
@@ -329,7 +328,7 @@ export default function V0Interface() {
                           <CheckCircle className="w-4 h-4 text-green-500" />
                           <span className="text-sm font-medium">Projeto Completo Gerado</span>
                         </div>
-                        
+
                         {message.component.files && (
                           <div className="bg-background/50 rounded-lg p-3">
                             <div className="flex items-center gap-2 mb-2">
@@ -494,7 +493,7 @@ export default function V0Interface() {
                   preview={selectedComponent.component.preview}
                 />
               )}
-              
+
               {activeTab === "files" && selectedComponent.component.files && (
                 <div className="space-y-4 h-full">
                   <div className="flex items-center justify-between">
@@ -508,7 +507,7 @@ export default function V0Interface() {
                       Baixar Tudo
                     </Button>
                   </div>
-                  
+
                   <ScrollArea className="h-[calc(100%-80px)]">
                     <div className="space-y-3">
                       {selectedComponent.component.files.files.map((file, index) => (

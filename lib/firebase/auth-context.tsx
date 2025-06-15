@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   User,
   signInWithEmailAndPassword,
@@ -49,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, displayName: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
-    
+
     await setDoc(doc(db, "users", newUser.uid), {
       uid: newUser.uid,
       email: newUser.email,
@@ -63,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    
+
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (!userDoc.exists()) {
       await setDoc(doc(db, "users", user.uid), {
@@ -80,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GithubAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    
+
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (!userDoc.exists()) {
       await setDoc(doc(db, "users", user.uid), {
@@ -100,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
+
       if (user) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
@@ -109,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUserData(null);
       }
-      
+
       setLoading(false);
     });
 

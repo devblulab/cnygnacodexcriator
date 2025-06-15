@@ -44,10 +44,22 @@ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBA
   try {
     connectAuthEmulator(auth, "http://localhost:9099")
     connectFirestoreEmulator(db, "localhost", 8080)
-    connectStorageEmulator(storage, "localhost", 9199)
+    connectStorageEmulator(storage, "localhost", 9199")
   } catch (error) {
     console.log("Firebase emulators already connected")
   }
 }
 
 export default app
+
+// Helper functions
+export const isFirebaseInitialized = () => {
+  return getApps().length > 0
+}
+
+export const ensureFirebaseInitialized = () => {
+  if (!isFirebaseInitialized()) {
+    return initializeApp(firebaseConfig)
+  }
+  return getApp()
+}
