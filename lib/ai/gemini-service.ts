@@ -114,7 +114,7 @@ Responda em JSON com:
       }
 
       return {
-        suggestions: ["Análise não disponível"],
+        suggestions: [],
         improvements: [],
         errors: []
       }
@@ -123,67 +123,7 @@ Responda em JSON com:
       throw new Error("Failed to analyze code")
     }
   }
-
-  // Geração de componentes com base em descrição
-  async generateComponent(description: string, type: string = "component"): Promise<string> {
-    if (!this.model) {
-      throw new Error("Gemini not initialized")
-    }
-
-    const prompt = `
-Crie um componente React/TypeScript ${type} baseado na descrição: "${description}"
-
-Requisitos:
-- Use TypeScript com tipos apropriados
-- Use Tailwind CSS para styling
-- Seja responsivo
-- Inclua comentários explicativos
-- Use boas práticas do React
-
-Retorne apenas o código do componente:
-`
-
-    try {
-      const result = await this.model.generateContent(prompt)
-      const response = await result.response
-      return response.text()
-    } catch (error) {
-      console.error("Error generating component:", error)
-      throw new Error("Failed to generate component")
-    }
-  }
-
-  // Otimização de código
-  async optimizeCode(code: string): Promise<string> {
-    if (!this.model) {
-      throw new Error("Gemini not initialized")
-    }
-
-    const prompt = `
-Otimize o seguinte código React/TypeScript para melhor performance e legibilidade:
-
-${code}
-
-Melhorias a considerar:
-- Performance (useMemo, useCallback, etc.)
-- Legibilidade e organização
-- Acessibilidade
-- Boas práticas do React
-
-Retorne o código otimizado:
-`
-
-    try {
-      const result = await this.model.generateContent(prompt)
-      const response = await result.response
-      return response.text()
-    } catch (error) {
-      console.error("Error optimizing code:", error)
-      throw new Error("Failed to optimize code")
-    }
-  }
 }
 
-// Export singleton instance
 const geminiService = new GeminiService()
 export default geminiService

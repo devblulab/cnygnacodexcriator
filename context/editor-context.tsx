@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from "react"
@@ -27,18 +26,18 @@ export type ProjectType = {
 }
 
 interface EditorContextType {
-  currentProject: ProjectType | null
   projects: ProjectType[]
-  activeFile: FileType | null
+  currentProject: ProjectType | null
+  currentFile: FileType | null
   loading: boolean
   createProject: (name: string, description: string) => Promise<void>
-  loadProject: (projectId: string) => Promise<void>
-  saveProject: () => Promise<void>
   deleteProject: (projectId: string) => Promise<void>
-  createFile: (name: string, content: string, language: string) => void
-  updateFile: (fileId: string, content: string) => void
-  deleteFile: (fileId: string) => void
-  setActiveFile: (file: FileType | null) => void
+  updateProject: (projectId: string, updates: Partial<ProjectType>) => Promise<void>
+  setCurrentProject: (project: ProjectType | null) => void
+  setCurrentFile: (file: FileType | null) => void
+  addFile: (file: Omit<FileType, "id">) => Promise<void>
+  updateFile: (fileId: string, updates: Partial<FileType>) => Promise<void>
+  deleteFile: (fileId: string) => Promise<void>
   refreshProjects: () => Promise<void>
 }
 
@@ -46,9 +45,9 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined)
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
-  const [currentProject, setCurrentProject] = useState<ProjectType | null>(null)
   const [projects, setProjects] = useState<ProjectType[]>([])
-  const [activeFile, setActiveFile] = useState<FileType | null>(null)
+  const [currentProject, setCurrentProject] = useState<ProjectType | null>(null)
+  const [currentFile, setCurrentFile] = useState<FileType | null>(null)
   const [loading, setLoading] = useState(false)
 
   const refreshProjects = async () => {
@@ -56,20 +55,102 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
     setLoading(true)
     try {
-      const projectsRef = collection(db, "projects")
-      const q = query(projectsRef, where("userId", "==", user.uid))
-      const snapshot = await getDocs(q)
-
-      const userProjects = snapshot.docs.map(doc => ({
+      const projectsQuery = query(
+        collection(db, "projects"),
+        where("userId", "==", user.uid)
+      )
+      const snapshot = await getDocs(projectsQuery)
+      const projectsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      } as ProjectType))
+      })) as ProjectType[]
 
-      setProjects(userProjects)
+      setProjects(projectsData)
     } catch (error) {
       console.error("Error fetching projects:", error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
+  }
+
+  const createProject = async (name: string, description: string) => {
+    if (!user) return
+
+    const projectData = {
+      name,
+      description,
+      files: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: user.uid,
+    }
+
+    const docRef = await addDoc(collection(db, "projects"), projectData)
+    const newProject = { id: docRef.id, ...projectData }
+    setProjects(prev => [...prev, newProject])
+  }
+
+  const deleteProject = async (projectId: string) => {
+    await deleteDoc(doc(db, "projects", projectId))
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+    if (currentProject?.id === projectId) {
+      setCurrentProject(null)
+      setCurrentFile(null)
+    }
+  }
+
+  const updateProject = async (projectId: string, updates: Partial<ProjectType>) => {
+    await updateDoc(doc(db, "projects", projectId), {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    })
+
+    setProjects(prev => 
+      prev.map(p => p.id === projectId ? { ...p, ...updates } : p)
+    )
+
+    if (currentProject?.id === projectId) {
+      setCurrentProject(prev => prev ? { ...prev, ...updates } : null)
+    }
+  }
+
+  const addFile = async (file: Omit<FileType, "id">) => {
+    if (!currentProject) return
+
+    const newFile = {
+      ...file,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    const updatedFiles = [...currentProject.files, newFile]
+    await updateProject(currentProject.id, { files: updatedFiles })
+  }
+
+  const updateFile = async (fileId: string, updates: Partial<FileType>) => {
+    if (!currentProject) return
+
+    const updatedFiles = currentProject.files.map(f =>
+      f.id === fileId ? { ...f, ...updates, updatedAt: new Date().toISOString() } : f
+    )
+
+    await updateProject(currentProject.id, { files: updatedFiles })
+
+    if (currentFile?.id === fileId) {
+      setCurrentFile(prev => prev ? { ...prev, ...updates } : null)
+    }
+  }
+
+  const deleteFile = async (fileId: string) => {
+    if (!currentProject) return
+
+    const updatedFiles = currentProject.files.filter(f => f.id !== fileId)
+    await updateProject(currentProject.id, { files: updatedFiles })
+
+    if (currentFile?.id === fileId) {
+      setCurrentFile(null)
+    }
   }
 
   useEffect(() => {
@@ -78,150 +159,27 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     } else {
       setProjects([])
       setCurrentProject(null)
-      setActiveFile(null)
+      setCurrentFile(null)
     }
   }, [user])
 
-  const createProject = async (name: string, description: string) => {
-    if (!user) return
-
-    const newProject: Omit<ProjectType, "id"> = {
-      name,
-      description,
-      files: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      userId: user.uid
-    }
-
-    try {
-      const docRef = await addDoc(collection(db, "projects"), newProject)
-      const project = { id: docRef.id, ...newProject }
-      setProjects(prev => [...prev, project])
-      setCurrentProject(project)
-    } catch (error) {
-      console.error("Error creating project:", error)
-    }
-  }
-
-  const loadProject = async (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      setCurrentProject(project)
-      setActiveFile(project.files[0] || null)
-    }
-  }
-
-  const saveProject = async () => {
-    if (!currentProject) return
-
-    try {
-      const projectRef = doc(db, "projects", currentProject.id)
-      await updateDoc(projectRef, {
-        ...currentProject,
-        updatedAt: new Date().toISOString()
-      })
-    } catch (error) {
-      console.error("Error saving project:", error)
-    }
-  }
-
-  const deleteProject = async (projectId: string) => {
-    try {
-      await deleteDoc(doc(db, "projects", projectId))
-      setProjects(prev => prev.filter(p => p.id !== projectId))
-      if (currentProject?.id === projectId) {
-        setCurrentProject(null)
-        setActiveFile(null)
-      }
-    } catch (error) {
-      console.error("Error deleting project:", error)
-    }
-  }
-
-  const createFile = (name: string, content: string, language: string) => {
-    if (!currentProject) return
-
-    const newFile: FileType = {
-      id: Date.now().toString(),
-      name,
-      path: `/${name}`,
-      content,
-      language,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
-    const updatedProject = {
-      ...currentProject,
-      files: [...currentProject.files, newFile],
-      updatedAt: new Date().toISOString()
-    }
-
-    setCurrentProject(updatedProject)
-    setActiveFile(newFile)
-  }
-
-  const updateFile = (fileId: string, content: string) => {
-    if (!currentProject) return
-
-    const updatedFiles = currentProject.files.map(file =>
-      file.id === fileId
-        ? { ...file, content, updatedAt: new Date().toISOString() }
-        : file
-    )
-
-    const updatedProject = {
-      ...currentProject,
-      files: updatedFiles,
-      updatedAt: new Date().toISOString()
-    }
-
-    setCurrentProject(updatedProject)
-
-    if (activeFile?.id === fileId) {
-      setActiveFile({ ...activeFile, content })
-    }
-  }
-
-  const deleteFile = (fileId: string) => {
-    if (!currentProject) return
-
-    const updatedFiles = currentProject.files.filter(file => file.id !== fileId)
-    const updatedProject = {
-      ...currentProject,
-      files: updatedFiles,
-      updatedAt: new Date().toISOString()
-    }
-
-    setCurrentProject(updatedProject)
-
-    if (activeFile?.id === fileId) {
-      setActiveFile(updatedFiles[0] || null)
-    }
-  }
-
   const value = {
-    currentProject,
     projects,
-    activeFile,
+    currentProject,
+    currentFile,
     loading,
     createProject,
-    loadProject,
-    saveProject,
     deleteProject,
-    createFile,
+    updateProject,
+    setCurrentProject,
+    setCurrentFile,
+    addFile,
     updateFile,
     deleteFile,
-    setActiveFile,
-    refreshProjects
+    refreshProjects,
   }
 
-  return (
-    <EditorContext.Provider value={value}>
-      {children}
-    </EditorContext.Provider>
-  )
+  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
 }
 
 export function useEditor() {
