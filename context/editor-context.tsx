@@ -1,6 +1,7 @@
+
 "use client"
 
-import React, { useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@/lib/firebase/auth-context"
 import { db } from "@/lib/firebase/config"
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore"
@@ -41,7 +42,7 @@ interface EditorContextType {
   refreshProjects: () => Promise<void>
 }
 
-const EditorContext = React.createContext<EditorContextType | undefined>(undefined)
+const EditorContext = createContext<EditorContextType | undefined>(undefined)
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()

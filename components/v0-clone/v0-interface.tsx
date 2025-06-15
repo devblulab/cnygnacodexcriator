@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useRef, useEffect } from "react"
@@ -70,8 +71,13 @@ export default function V0Interface() {
   const [input, setInput] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedComponent, setSelectedComponent] = useState<Message | null>(null)
+  const [mounted, setMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { theme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -140,8 +146,17 @@ export default function V0Interface() {
     navigator.clipboard.writeText(text)
   }
 
+  const getCurrentTime = () => {
+    if (!mounted) return "00:00"
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  if (!mounted) {
+    return <div className="flex h-screen bg-background" />
+  }
+
   return (
-    <div className="flex h-screen bg-background" suppressHydrationWarning>
+    <div className="flex h-screen bg-background">
       {/* Chat Panel */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
@@ -174,7 +189,7 @@ export default function V0Interface() {
               </div>
 
               <div className="text-sm text-muted-foreground">
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {getCurrentTime()}
               </div>
 
               <div className="w-full max-w-2xl space-y-4">
