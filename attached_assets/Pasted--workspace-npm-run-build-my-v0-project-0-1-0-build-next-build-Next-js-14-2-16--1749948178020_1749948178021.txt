@@ -1,0 +1,33 @@
+~/workspace$ npm run build
+
+> my-v0-project@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.16
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data  ...PageNotFoundError: Cannot find module for page: /api/admin/add-user
+    at getPagePath (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/require.js:94:15)
+    at requirePage (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/require.js:99:22)
+    at /home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/load-components.js:98:84
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async loadComponentsImpl (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/load-components.js:98:26)
+    at async /home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/build/utils.js:1116:32
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/trace/trace.js:154:20) {
+  code: 'ENOENT'
+}
+unhandledRejection Error [PageNotFoundError]: Cannot find module for page: /_document
+    at getPagePath (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/require.js:94:15)
+    at requirePage (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/require.js:99:22)
+    at /home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/load-components.js:72:65
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/server/load-components.js:71:33)
+    at async Object.getDefinedNamedExports (/home/runner/workspace/node_modules/.pnpm/next@14.2.16_@opentelemetry+api@1.9.0_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/build/utils.js:1289:24) {
+  type: 'PageNotFoundError',
+  code: 'ENOENT'
+}
