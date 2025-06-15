@@ -1,0 +1,40 @@
+
+
+1 of 1 error
+Next.js (14.2.16) is outdated (learn more)
+
+Unhandled Runtime Error
+Error: Unsupported Server Component type: undefined
+
+Call Stack
+Next.js
+e
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268532)
+eF
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268583)
+e_
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:264547)
+e
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268095)
+eF
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268583)
+eq
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:274547)
+ej
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:264791)
+e_
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:263833)
+e
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268095)
+eF
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:268583)
+<unknown>
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:265814)
+Array.toJSON
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:266278)
+eq
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:274646)
+eJ
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:275164)
+Timeout._onTimeout
+/home/runner/workspace/node_modules/.pnpm/next@14.2.16_react-dom@18.0.0_react@18.0.0__react@18.0.0/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js (35:264951)
