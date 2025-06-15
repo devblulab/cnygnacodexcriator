@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth, connectAuthEmulator } from "firebase/auth"
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"
@@ -48,7 +49,6 @@ if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIREBA
     console.log("Firebase emulators already connected")
   }
 }
-
 
 export default app
 
